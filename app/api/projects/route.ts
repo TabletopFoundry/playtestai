@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createProject, getProjectsSummary } from "@/lib/db";
-import type { CreateProjectInput } from "@/lib/types";
+import { CreateProjectInputSchema, formatZodErrors } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
@@ -9,18 +9,19 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const payload = (await request.json()) as Partial<CreateProjectInput>;
+  const raw = await request.json();
+  const parsed = CreateProjectInputSchema.safeParse(raw);
 
-  if (!payload.name?.trim()) {
-    return NextResponse.json({ error: "Project name is required." }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json({ error: `Invalid project data: ${formatZodErrors(parsed.error)}` }, { status: 400 });
   }
 
   const project = createProject({
-    name: payload.name,
-    description: payload.description?.trim() ?? "",
-    playerCountMin: Number(payload.playerCountMin ?? 2),
-    playerCountMax: Number(payload.playerCountMax ?? 4),
-    winConditionType: payload.winConditionType ?? "highest_score",
+    name: parsed.data.name,
+    description: parsed.data.description,
+    playerCountMin: parsed.data.playerCountMin,
+    playerCountMax: parsed.data.playerCountMax,
+    winConditionType: parsed.data.winConditionType,
   });
 
   return NextResponse.json({ projectId: project.id });

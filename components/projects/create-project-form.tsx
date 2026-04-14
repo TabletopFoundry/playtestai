@@ -66,7 +66,7 @@ export function CreateProjectForm() {
           <input
             value={form.name}
             onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none transition focus:border-cyan-400/40 focus-visible:ring-2 focus-visible:ring-cyan-400/50"
             placeholder="Spellforge Arena"
           />
         </label>
@@ -76,7 +76,7 @@ export function CreateProjectForm() {
             value={form.description}
             onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
             rows={4}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none transition focus:border-cyan-400/40 focus-visible:ring-2 focus-visible:ring-cyan-400/50"
             placeholder="What are you testing?"
           />
         </label>
@@ -88,7 +88,7 @@ export function CreateProjectForm() {
             max={6}
             value={form.playerCountMin}
             onChange={(event) => setForm((current) => ({ ...current, playerCountMin: Number(event.target.value) }))}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none transition focus:border-cyan-400/40 focus-visible:ring-2 focus-visible:ring-cyan-400/50"
           />
         </label>
         <label className="space-y-2">
@@ -99,7 +99,7 @@ export function CreateProjectForm() {
             max={6}
             value={form.playerCountMax}
             onChange={(event) => setForm((current) => ({ ...current, playerCountMax: Number(event.target.value) }))}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none transition focus:border-cyan-400/40 focus-visible:ring-2 focus-visible:ring-cyan-400/50"
           />
         </label>
         <label className="space-y-2 md:col-span-2">
@@ -107,7 +107,7 @@ export function CreateProjectForm() {
           <select
             value={form.winConditionType}
             onChange={(event) => setForm((current) => ({ ...current, winConditionType: event.target.value as WinConditionType }))}
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition focus:border-cyan-400/40"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none transition focus:border-cyan-400/40 focus-visible:ring-2 focus-visible:ring-cyan-400/50"
           >
             <option value="highest_score">Highest score</option>
             <option value="first_to_x">First to X</option>
@@ -121,7 +121,7 @@ export function CreateProjectForm() {
       <button
         type="submit"
         disabled={loading}
-        className="inline-flex items-center justify-center rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex items-center justify-center rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
       >
         {loading ? "Creating project..." : "Create project"}
       </button>

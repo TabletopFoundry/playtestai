@@ -1,6 +1,10 @@
 node_modules/
 .next/
 data/*.db
+data/*.sqlite*
 *.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 .env
 .env.local

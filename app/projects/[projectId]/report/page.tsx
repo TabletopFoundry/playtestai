@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { getProjectById } from "@/lib/db";
 import { formatDate, formatPercent } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ projectId: string }> }): Promise<Metadata> {
+  const { projectId } = await params;
+  const project = getProjectById(projectId);
+  return { title: project ? `Report — ${project.name} | PlaytestAI` : "Report | PlaytestAI" };
+}
 
 export default async function ReportPage({
   params,

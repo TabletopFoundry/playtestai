@@ -1,9 +1,16 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { TopNav } from "@/components/chrome/top-nav";
 import { ProjectWorkbench } from "@/components/projects/project-workbench";
 import { getProjectById } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: Promise<{ projectId: string }> }): Promise<Metadata> {
+  const { projectId } = await params;
+  const project = getProjectById(projectId);
+  return { title: project ? `${project.name} | PlaytestAI` : "Project | PlaytestAI" };
+}
 
 export default async function ProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;

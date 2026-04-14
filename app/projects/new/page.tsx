@@ -1,6 +1,10 @@
 import { TopNav } from "@/components/chrome/top-nav";
 import { CreateProjectForm } from "@/components/projects/create-project-form";
 
+export const metadata = {
+  title: "New Project | PlaytestAI",
+};
+
 export default function NewProjectPage() {
   return (
     <div className="min-h-screen">

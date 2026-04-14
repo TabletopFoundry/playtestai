@@ -6,6 +6,10 @@ import { formatDate, formatPercent } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Projects | PlaytestAI",
+};
+
 export default function ProjectsPage() {
   const projects = getProjectsSummary();
 

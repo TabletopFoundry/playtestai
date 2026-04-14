@@ -1,28 +1,26 @@
 import { NextResponse } from "next/server";
 import { createSimulationRun } from "@/lib/db";
-import type { SimulationBatchResult, SimulationConfig } from "@/lib/types";
+import { CreateRunInputSchema, formatZodErrors } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request, context: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await context.params;
-  const payload = (await request.json()) as {
-    versionId?: string;
-    label?: string;
-    config?: SimulationConfig;
-    result?: SimulationBatchResult;
-  };
 
-  if (!payload.versionId || !payload.config || !payload.result) {
-    return NextResponse.json({ error: "versionId, config, and result are required." }, { status: 400 });
+  const raw = await request.json();
+  const parsed = CreateRunInputSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: `Invalid run data: ${formatZodErrors(parsed.error)}` }, { status: 400 });
   }
+
+  const { versionId, label, config, result } = parsed.data;
 
   const project = createSimulationRun(
     projectId,
-    payload.versionId,
-    payload.label ?? `Run · ${new Date().toLocaleString()}`,
-    payload.config,
-    payload.result,
+    versionId,
+    label ?? `Run · ${new Date().toLocaleString()}`,
+    config,
+    result,
   );
 
   if (!project) {
