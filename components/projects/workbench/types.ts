@@ -45,8 +45,10 @@ export function emptyCard(): CardDefinition {
   };
 }
 
+const AGENT_CYCLE: AgentType[] = ["random", "greedy", "balanced"];
+
 export function defaultAgents(playerCount: number): AgentType[] {
-  return Array.from({ length: playerCount }, (_, index) => (["random", "greedy", "balanced"] as AgentType[])[index % 3]);
+  return Array.from({ length: playerCount }, (_, index) => AGENT_CYCLE[index % 3]!);
 }
 
 export function normalizeConfig(version: GameVersion, config: SimulationConfig): SimulationConfig {
@@ -55,7 +57,7 @@ export function normalizeConfig(version: GameVersion, config: SimulationConfig):
     games: Math.min(Math.max(config.games, 100), 10000),
     playerCount,
     seed: Number.isFinite(config.seed) ? config.seed : 1337,
-    agentTypes: Array.from({ length: playerCount }, (_, index) => config.agentTypes[index] ?? defaultAgents(playerCount)[index]),
+    agentTypes: Array.from({ length: playerCount }, (_, index) => config.agentTypes[index] ?? defaultAgents(playerCount)[index] ?? "random"),
   };
 }
 
@@ -79,7 +81,7 @@ export function parseCsvCards(csvText: string) {
     throw new Error("CSV needs a header row and at least one data row.");
   }
 
-  const headers = rows[0].map((header) => header.toLowerCase());
+  const headers = rows[0]!.map((header) => header.toLowerCase());
   return rows.slice(1).map((cells, index) => {
     const record = headers.reduce<Record<string, string>>((acc, header, headerIndex) => {
       acc[header] = cells[headerIndex] ?? "";

@@ -27,7 +27,7 @@ export function SimulationTab({ state }: SimulationTabProps) {
     updateFromResponse,
   } = state;
 
-  const [simulationConfig, setSimulationConfig] = useState<SimulationConfig>(createConfig(project.versions[0], 750));
+  const [simulationConfig, setSimulationConfig] = useState<SimulationConfig>(createConfig(project.versions[0]!, 750));
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationProgress, setSimulationProgress] = useState(0);
 

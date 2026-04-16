@@ -34,7 +34,7 @@ function parseCsvForPreview(csvText: string): CsvPreview {
     throw new Error("CSV needs a header row and at least one data row.");
   }
 
-  const headers = rows[0];
+  const headers = rows[0] ?? [];
   const cards = parseCsvCards(csvText);
   return { cards, headers, rawRows: rows.slice(1) };
 }

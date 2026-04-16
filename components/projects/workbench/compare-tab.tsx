@@ -32,7 +32,7 @@ export function CompareTab({ state }: CompareTabProps) {
     handleCreateSnapshot,
   } = state;
 
-  const [compareConfig, setCompareConfig] = useState<SimulationConfig>(createConfig(project.versions[0], 500));
+  const [compareConfig, setCompareConfig] = useState<SimulationConfig>(createConfig(project.versions[0]!, 500));
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareProgress, setCompareProgress] = useState(0);
   const [comparison, setComparison] = useState<{
