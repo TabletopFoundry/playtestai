@@ -64,6 +64,7 @@ export function DefinitionTab({ state, savingProject, savingVersion, handleSaveP
 
   // Autosave: debounced save 5 seconds after last edit
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
   useEffect(() => {
@@ -79,12 +80,15 @@ export function DefinitionTab({ state, savingProject, savingVersion, handleSaveP
       setAutosaveStatus("saving");
       await handleSaveVersion(true);
       setAutosaveStatus("saved");
-      setTimeout(() => setAutosaveStatus("idle"), 2000);
+      resetTimerRef.current = setTimeout(() => setAutosaveStatus("idle"), 2000);
     }, 5000);
 
     return () => {
       if (autosaveTimerRef.current) {
         clearTimeout(autosaveTimerRef.current);
+      }
+      if (resetTimerRef.current) {
+        clearTimeout(resetTimerRef.current);
       }
     };
   }, [dirty, workingVersion, handleSaveVersion]);

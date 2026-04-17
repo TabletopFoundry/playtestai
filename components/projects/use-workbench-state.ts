@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { validateVersionPlayable } from "@/lib/simulation/engine";
 import type { GameProject, GameVersion } from "@/lib/types";
 import { deepClone, stringifyStats } from "@/lib/utils";
 import type { ActiveTab, WorkbenchState } from "./workbench/types";
+import { useKeyboardShortcuts } from "./use-keyboard-shortcuts";
 
 export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
   const initialVersion = initialProject.versions[0] ?? null;
@@ -16,6 +17,14 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
   const [activeTab, setActiveTab] = useState<ActiveTab>("dashboard");
   const [selectedVersionId, setSelectedVersionId] = useState(initialVersion?.id ?? "");
   const [selectedRunId, setSelectedRunId] = useState(initialProject.runs[0]?.id ?? "");
+
+  // Refs to avoid stale closures in updateFromResponse when concurrent calls overlap
+  const selectedRunIdRef = useRef(selectedRunId);
+  const selectedVersionIdRef = useRef(selectedVersionId);
+  useEffect(() => {
+    selectedRunIdRef.current = selectedRunId;
+    selectedVersionIdRef.current = selectedVersionId;
+  });
   const [workingVersion, setWorkingVersion] = useState<GameVersion | null>(initialVersion ? deepClone(initialVersion) : null);
   const [projectDraft, setProjectDraft] = useState({ name: initialProject.name, description: initialProject.description });
   const [cardStatsInput, setCardStatsInput] = useState<Record<string, string>>(initialStatsInput);
@@ -61,13 +70,13 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
       setProject(payload.project);
       setProjectDraft({ name: payload.project.name, description: payload.project.description });
 
-      const nextRunId = payload.project.runs.find((run) => run.id === selectedRunId)?.id ?? payload.project.runs[0]?.id ?? "";
+      const nextRunId = payload.project.runs.find((run) => run.id === selectedRunIdRef.current)?.id ?? payload.project.runs[0]?.id ?? "";
       setSelectedRunId(nextRunId);
 
       const nextVersionId = options?.versionId;
       if (nextVersionId) {
         syncVersionSelection(payload.project, nextVersionId);
-      } else if (!payload.project.versions.find((version) => version.id === selectedVersionId) && payload.project.versions[0]) {
+      } else if (!payload.project.versions.find((version) => version.id === selectedVersionIdRef.current) && payload.project.versions[0]) {
         syncVersionSelection(payload.project, payload.project.versions[0].id);
       }
 
@@ -76,7 +85,7 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
       }
       return payload.project;
     },
-    [selectedRunId, selectedVersionId, syncVersionSelection],
+    [syncVersionSelection],
   );
 
   const handleSaveProject = useCallback(async () => {
@@ -150,6 +159,24 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
       setErrorMessage(caught instanceof Error ? caught.message : "Failed to create snapshot.");
     }
   }, [dirty, handleSaveVersion, project.id, project.versions.length, selectedVersion, syncVersionSelection, updateFromResponse]);
+
+  // Keyboard shortcut: Cmd/Ctrl+Enter dispatches a custom event for the simulation tab
+  const handleRunSimulationShortcut = useCallback(() => {
+    document.dispatchEvent(new CustomEvent("playtestai:run-simulation"));
+  }, []);
+
+  const handleDismissMessages = useCallback(() => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  }, []);
+
+  useKeyboardShortcuts({
+    onSave: () => void handleSaveVersion(),
+    onRunSimulation: handleRunSimulationShortcut,
+    onDismissMessages: handleDismissMessages,
+    onSwitchTab: setActiveTab,
+    activeTab,
+  });
 
   return {
     project,

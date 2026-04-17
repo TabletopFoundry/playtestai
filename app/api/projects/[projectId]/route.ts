@@ -18,7 +18,13 @@ export async function GET(_: Request, context: { params: Promise<{ projectId: st
 export async function PUT(request: Request, context: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await context.params;
 
-  const raw = await request.json();
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
   const parsed = UpdateProjectInputSchema.safeParse(raw);
   if (!parsed.success) {
     return NextResponse.json({ error: `Invalid project data: ${formatZodErrors(parsed.error)}` }, { status: 400 });

@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import type { GameProject } from "@/lib/types";
 import { agentLabel, formatPercent } from "@/lib/utils";
+import { escapeCsvField } from "@/lib/csv-export";
 import type { ActiveTab, CardSortKey } from "./types";
 import { MetricCard, SectionCard, darkTooltipProps } from "./shared";
 
@@ -43,14 +44,14 @@ function generateRunCsv(run: GameProject["runs"][number]): string {
   lines.push("# Strategy Breakdown");
   lines.push("Agent,Wins,Win Rate %");
   for (const entry of run.result.strategyBreakdown) {
-    lines.push(`${entry.agent},${entry.wins},${entry.winRate.toFixed(1)}`);
+    lines.push(`${escapeCsvField(entry.agent)},${entry.wins},${entry.winRate.toFixed(1)}`);
   }
   lines.push("");
 
   lines.push("# Card Rankings");
   lines.push("Card,Power Score,Win Correlation %,Avg Impact,Inclusion Rate %,Total Plays");
   for (const card of run.result.cardRankings) {
-    lines.push(`${card.cardName},${card.powerScore.toFixed(1)},${card.winCorrelation.toFixed(1)},${card.averageImpact.toFixed(1)},${card.inclusionRate.toFixed(1)},${card.totalPlays}`);
+    lines.push(`${escapeCsvField(card.cardName)},${card.powerScore.toFixed(1)},${card.winCorrelation.toFixed(1)},${card.averageImpact.toFixed(1)},${card.inclusionRate.toFixed(1)},${card.totalPlays}`);
   }
 
   return lines.join("\n");

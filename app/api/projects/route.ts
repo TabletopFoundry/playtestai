@@ -9,7 +9,13 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const raw = await request.json();
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
   const parsed = CreateProjectInputSchema.safeParse(raw);
 
   if (!parsed.success) {

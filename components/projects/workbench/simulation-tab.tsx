@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertCircle, AlertTriangle, Loader2, Sparkles } from "lucide-react";
 import { simulateBatchAsync } from "@/lib/simulation/engine";
 import type { AgentType, SimulationConfig, ValidationIssue } from "@/lib/types";
@@ -31,6 +31,9 @@ export function SimulationTab({ state }: SimulationTabProps) {
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationProgress, setSimulationProgress] = useState(0);
 
+  // Ref for the active AbortController so we can cancel on unmount or re-run
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   async function handleRunSimulation() {
     if (!workingVersion) return;
     setErrorMessage(null);
@@ -42,6 +45,11 @@ export function SimulationTab({ state }: SimulationTabProps) {
       return;
     }
 
+    // Abort any in-flight simulation before starting a new one
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setSimulationLoading(true);
     setSimulationProgress(0);
 
@@ -52,7 +60,7 @@ export function SimulationTab({ state }: SimulationTabProps) {
       }
 
       const config = normalizeConfig(savedVersion, simulationConfig);
-      const result = await simulateBatchAsync(savedVersion, config, setSimulationProgress);
+      const result = await simulateBatchAsync(savedVersion, config, setSimulationProgress, controller.signal);
       const response = await fetch(`/api/projects/${project.id}/runs`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -62,6 +70,7 @@ export function SimulationTab({ state }: SimulationTabProps) {
           config,
           result,
         }),
+        signal: controller.signal,
       });
       const nextProject = await updateFromResponse(response);
       const latestRun = nextProject.runs[0];
@@ -71,12 +80,35 @@ export function SimulationTab({ state }: SimulationTabProps) {
       setActiveTab("dashboard");
       setStatusMessage(`Simulation complete. ${config.games} games saved to history.`);
     } catch (caught) {
+      if (caught instanceof DOMException && caught.name === "AbortError") return;
       setErrorMessage(caught instanceof Error ? caught.message : "Simulation failed.");
     } finally {
       setSimulationLoading(false);
       setSimulationProgress(0);
     }
   }
+
+  // Stable ref so the effect listener always calls the latest handleRunSimulation
+  const handleRunRef = useRef(handleRunSimulation);
+  useEffect(() => {
+    handleRunRef.current = handleRunSimulation;
+  });
+
+  // Listen for keyboard shortcut event (Cmd/Ctrl+Enter)
+  useEffect(() => {
+    function onRunShortcut() {
+      void handleRunRef.current();
+    }
+    document.addEventListener("playtestai:run-simulation", onRunShortcut);
+    return () => document.removeEventListener("playtestai:run-simulation", onRunShortcut);
+  }, []);
+
+  // Abort any running simulation on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   if (!workingVersion) return null;
 
