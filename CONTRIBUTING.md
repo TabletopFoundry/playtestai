@@ -30,7 +30,7 @@ Seed data is created automatically on first launch.
 ```bash
 npm run lint         # ESLint
 npm run typecheck    # TypeScript compiler
-npm test             # Vitest (35 tests)
+npm test             # Vitest (78 tests)
 ```
 
 4. **Open a pull request** against `main`

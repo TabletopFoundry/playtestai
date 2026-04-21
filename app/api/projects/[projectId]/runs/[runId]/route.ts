@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { deleteSimulationRun } from "@/lib/db";
 import { getProjectById } from "@/lib/db/projects";
+import { notFound } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 
@@ -9,9 +10,7 @@ export async function DELETE(_: Request, context: { params: Promise<{ projectId:
   deleteSimulationRun(projectId, runId);
 
   const project = getProjectById(projectId);
-  if (!project) {
-    return NextResponse.json({ error: "Project not found." }, { status: 404 });
-  }
+  if (!project) return notFound("Project");
 
   return NextResponse.json({ project });
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createProject, getProjectsSummary } from "@/lib/db";
-import { CreateProjectInputSchema, formatZodErrors } from "@/lib/validation";
+import { CreateProjectInputSchema } from "@/lib/validation";
+import { parseJsonBody, validationError } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 
@@ -9,18 +10,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let raw: unknown;
-  try {
-    raw = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
-  }
+  const body = await parseJsonBody(request);
+  if ("error" in body) return body.error;
 
-  const parsed = CreateProjectInputSchema.safeParse(raw);
-
-  if (!parsed.success) {
-    return NextResponse.json({ error: `Invalid project data: ${formatZodErrors(parsed.error)}` }, { status: 400 });
-  }
+  const parsed = CreateProjectInputSchema.safeParse(body.data);
+  if (!parsed.success) return validationError("Invalid project data", parsed.error);
 
   const project = createProject({
     name: parsed.data.name,

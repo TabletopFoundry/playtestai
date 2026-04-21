@@ -2,6 +2,12 @@
   "name": "playtestai",
   "version": "0.1.0",
   "private": true,
+  "description": "AI-powered board game playtesting and balance analysis platform",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=9"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -10,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "validate": "npm run typecheck && npm run lint && npm test"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",

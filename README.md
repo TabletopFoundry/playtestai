@@ -3,7 +3,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
-[![Tests](https://img.shields.io/badge/tests-35%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-78%20passing-brightgreen)](#testing)
 
 **AI-powered board game playtesting and balance analysis.** Define card-driven games, run
 thousands of automated playtests with AI agents, spot broken openers, and compare balance
@@ -63,6 +63,7 @@ launch — you'll see example projects ready to simulate.
 | `npm test` | Run all tests once |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
+| `npm run validate` | Run typecheck + lint + tests (pre-push) |
 
 ---
 
@@ -82,6 +83,7 @@ playtestai/
 │   │   └── workbench/            # Tab panels (dashboard, definition, simulate, compare, report)
 │   └── ui/                       # Shared UI primitives
 ├── lib/
+│   ├── api-helpers.ts            # Shared API response utilities
 │   ├── db/                       # Database layer (schema, repos, seed)
 │   │   ├── schema.ts             # SQLite schema + connection
 │   │   ├── projects.ts           # Project CRUD
@@ -130,6 +132,7 @@ The engine uses a simplified card battler loop designed to surface balance issue
 
 | Method | Path | Description |
 |---|---|---|
+| `GET` | `/api/health` | Health check (version, timestamp) |
 | `GET` | `/api/projects` | List all projects with summaries |
 | `POST` | `/api/projects` | Create a new project |
 | `GET` | `/api/projects/:id` | Get project with versions and runs |
@@ -144,10 +147,10 @@ The engine uses a simplified card battler loop designed to surface balance issue
 
 ## Testing
 
-Tests cover the simulation engine, validation logic, utility functions, and CSV parsing:
+Tests cover the simulation engine, agent strategies, game mechanics, validation logic, utility functions, and CSV parsing:
 
 ```bash
-npm test              # Run all 35 tests
+npm test              # Run all 78 tests
 npm run test:watch    # Watch mode for development
 npm run test:coverage # Generate coverage report
 ```
