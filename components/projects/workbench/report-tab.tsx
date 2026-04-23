@@ -27,7 +27,7 @@ export function ReportTab({ project, selectedRun }: ReportTabProps) {
             </div>
             <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-5">
               <p className="text-sm text-slate-400">Open the printable report view, then use your browser print dialog to export PDF.</p>
-              <Link href={`/projects/${project.id}/report?runId=${selectedRun.id}`} target="_blank" className="mt-5 inline-flex items-center gap-2 rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+              <Link href={`/projects/${project.id}/report?runId=${selectedRun.id}`} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
                 <Download className="h-4 w-4" />
                 Open report view
               </Link>

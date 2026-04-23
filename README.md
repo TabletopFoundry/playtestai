@@ -130,18 +130,21 @@ The engine uses a simplified card battler loop designed to surface balance issue
 
 ## API Endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/health` | Health check (version, timestamp) |
-| `GET` | `/api/projects` | List all projects with summaries |
-| `POST` | `/api/projects` | Create a new project |
-| `GET` | `/api/projects/:id` | Get project with versions and runs |
-| `PUT` | `/api/projects/:id` | Update project name/description |
-| `DELETE` | `/api/projects/:id` | Delete project and all related data |
-| `POST` | `/api/projects/:id/versions` | Duplicate a version |
-| `PUT` | `/api/projects/:id/versions/:vid` | Update version definition |
-| `POST` | `/api/projects/:id/runs` | Save a simulation run |
-| `DELETE` | `/api/projects/:id/runs/:rid` | Delete a simulation run |
+| Method | Path | Description | Response |
+|---|---|---|---|
+| `GET` | `/api/health` | Health check (version, timestamp) | `200` with JSON body |
+| `GET` | `/api/projects` | List all projects with summaries | `200` with JSON body |
+| `POST` | `/api/projects` | Create a new project | `201` with `{ project }` |
+| `GET` | `/api/projects/:id` | Get project with versions and runs | `200` with `{ project }` |
+| `PUT` | `/api/projects/:id` | Update project name/description | `200` with `{ project }` |
+| `DELETE` | `/api/projects/:id` | Delete project and all related data | `204` No Content |
+| `POST` | `/api/projects/:id/versions` | Duplicate a version | `201` with `{ project }` |
+| `PUT` | `/api/projects/:id/versions/:vid` | Update version definition | `200` with `{ project }` |
+| `DELETE` | `/api/projects/:id/versions/:vid` | Delete a version | `200` with `{ project }` |
+| `POST` | `/api/projects/:id/runs` | Save a simulation run | `201` with `{ project }` |
+| `DELETE` | `/api/projects/:id/runs/:rid` | Delete a simulation run | `200` with `{ project }` |
+
+> **DELETE convention:** Deleting a **project** returns `204 No Content` (the parent resource no longer exists). Deleting a **version** or **run** returns `200` with the updated parent `{ project }` payload so the client can refresh state without an extra round-trip.
 
 ---
 

@@ -26,6 +26,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -33,11 +34,15 @@ export function ConfirmDialog({
 
     if (open && !dialog.open) {
       dialog.showModal();
-      confirmBtnRef.current?.focus();
+      if (variant === "danger") {
+        cancelBtnRef.current?.focus();
+      } else {
+        confirmBtnRef.current?.focus();
+      }
     } else if (!open && dialog.open) {
       dialog.close();
     }
-  }, [open]);
+  }, [open, variant]);
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -75,6 +80,7 @@ export function ConfirmDialog({
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button
+            ref={cancelBtnRef}
             type="button"
             onClick={onCancel}
             className="rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"

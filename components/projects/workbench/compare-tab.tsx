@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CopyPlus, Loader2, Swords, TableProperties } from "lucide-react";
 import {
   Bar,
@@ -43,6 +43,11 @@ export function CompareTab({ state }: CompareTabProps) {
   } | null>(null);
   const [compareVersionAId, setCompareVersionAId] = useState(project.versions[0]?.id ?? "");
   const [compareVersionBId, setCompareVersionBId] = useState(project.versions[1]?.id ?? project.versions[0]?.id ?? "");
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight comparison on unmount
+  useEffect(() => () => { abortControllerRef.current?.abort(); }, []);
 
   const compareVersions = useMemo(
     () => ({
@@ -93,11 +98,16 @@ export function CompareTab({ state }: CompareTabProps) {
     setCompareLoading(true);
     setCompareProgress(0);
 
+    // Abort any in-flight comparison before starting a new one
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const configA = normalizeConfig(versionA, compareConfig);
       const configB = normalizeConfig(versionB, compareConfig);
-      const resultA = await simulateBatchAsync(versionA, configA, (value) => setCompareProgress(value / 2));
-      const resultB = await simulateBatchAsync(versionB, configB, (value) => setCompareProgress(50 + value / 2));
+      const resultA = await simulateBatchAsync(versionA, configA, (value) => setCompareProgress(value / 2), controller.signal);
+      const resultB = await simulateBatchAsync(versionB, configB, (value) => setCompareProgress(50 + value / 2), controller.signal);
       setComparison({ versionAId: versionA.id, versionBId: versionB.id, resultA, resultB });
       setStatusMessage("A/B comparison complete. Review the recommendation below.");
     } catch (caught) {

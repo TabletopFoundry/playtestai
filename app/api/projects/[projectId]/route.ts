@@ -39,5 +39,5 @@ export async function DELETE(_: Request, context: { params: Promise<{ projectId:
 
   if (!deleted) return notFound("Project");
 
-  return NextResponse.json({ success: true });
+  return new Response(null, { status: 204 });
 }

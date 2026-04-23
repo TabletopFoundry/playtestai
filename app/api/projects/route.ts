@@ -24,5 +24,5 @@ export async function POST(request: Request) {
     winConditionType: parsed.data.winConditionType,
   });
 
-  return NextResponse.json({ projectId: project.id });
+  return NextResponse.json({ projectId: project.id }, { status: 201 });
 }

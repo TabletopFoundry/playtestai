@@ -35,5 +35,5 @@ export async function POST(request: Request, context: { params: Promise<{ projec
   const project = getProjectById(projectId);
   if (!project) return notFound("Project");
 
-  return NextResponse.json({ project });
+  return NextResponse.json({ project }, { status: 201 });
 }
