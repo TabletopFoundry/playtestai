@@ -3,7 +3,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
-[![Tests](https://img.shields.io/badge/tests-78%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-127%20passing-brightgreen)](#testing)
 
 **AI-powered board game playtesting and balance analysis.** Define card-driven games, run
 thousands of automated playtests with AI agents, spot broken openers, and compare balance
@@ -153,7 +153,7 @@ The engine uses a simplified card battler loop designed to surface balance issue
 Tests cover the simulation engine, agent strategies, game mechanics, validation logic, utility functions, and CSV parsing:
 
 ```bash
-npm test              # Run all 78 tests
+npm test              # Run all 127 tests
 npm run test:watch    # Watch mode for development
 npm run test:coverage # Generate coverage report
 ```
