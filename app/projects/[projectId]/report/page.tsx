@@ -35,7 +35,7 @@ export default async function ReportPage({
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 text-slate-100 sm:px-6 lg:px-8 print:bg-white print:text-slate-950">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-10 text-slate-100 focus:outline-none sm:px-6 lg:px-8 print:bg-white print:text-slate-950">
       <div className="flex flex-wrap items-start justify-between gap-4 rounded-[2rem] border border-white/10 bg-white/5 p-8 print:border-slate-200 print:bg-white">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.35em] text-cyan-200 print:text-slate-500">Balance report</p>

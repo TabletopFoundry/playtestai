@@ -34,7 +34,7 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <TopNav />
-      <main>
+      <main id="main-content" tabIndex={-1} className="focus:outline-none">
         <section className="mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-24">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.35em] text-cyan-200">Board game balance lab</p>

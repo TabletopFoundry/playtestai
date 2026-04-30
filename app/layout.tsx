@@ -31,7 +31,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} dark`}>
-      <body className="min-h-screen bg-[#060816] text-slate-100 antialiased">{children}</body>
+      <body className="min-h-screen bg-[#060816] text-slate-100 antialiased">
+        <a
+          href="#main-content"
+          className="sr-only fixed left-4 top-4 z-50 rounded-full bg-cyan-400 px-4 py-2 font-medium text-slate-950 focus:not-sr-only"
+        >
+          Skip to content
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

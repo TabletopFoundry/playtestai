@@ -23,7 +23,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
   return (
     <div className="min-h-screen">
       <TopNav />
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl px-4 py-8 focus:outline-none sm:px-6 lg:px-8">
         <ProjectWorkbench initialProject={project} />
       </main>
     </div>

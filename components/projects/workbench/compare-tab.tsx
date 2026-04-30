@@ -32,7 +32,12 @@ export function CompareTab({ state }: CompareTabProps) {
     handleCreateSnapshot,
   } = state;
 
-  const [compareConfig, setCompareConfig] = useState<SimulationConfig>(createConfig(project.versions[0]!, 500));
+  const [compareConfig, setCompareConfig] = useState<SimulationConfig>(() => {
+    const initialVersion = project.versions[0];
+    return initialVersion
+      ? createConfig(initialVersion, 500)
+      : { games: 500, playerCount: 2, seed: 1337, agentTypes: defaultAgents(2) };
+  });
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareProgress, setCompareProgress] = useState(0);
   const [comparison, setComparison] = useState<{
@@ -160,12 +165,21 @@ export function CompareTab({ state }: CompareTabProps) {
           </label>
         </div>
         {compareLoading ? (
-          <div className="mt-5 rounded-3xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+          <div className="mt-5 rounded-3xl border border-cyan-400/20 bg-cyan-400/5 p-4" aria-busy="true">
+            <p className="sr-only" aria-live="polite">Comparison {compareProgress.toFixed(0)}% complete.</p>
             <div className="flex items-center justify-between text-sm text-cyan-100">
               <span>Comparing variants...</span>
               <span>{compareProgress.toFixed(0)}%</span>
             </div>
-            <div className="mt-3 h-3 rounded-full bg-white/10">
+            <div
+              className="mt-3 h-3 rounded-full bg-white/10"
+              role="progressbar"
+              aria-label="Comparison progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(compareProgress)}
+              aria-valuetext={`${compareProgress.toFixed(0)}% complete`}
+            >
               <div className="h-full rounded-full bg-cyan-400 transition-all" style={{ width: `${compareProgress}%` }} />
             </div>
           </div>

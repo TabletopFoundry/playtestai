@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { deleteVersion, publishVersion, updateVersion } from "@/lib/db";
 import { getProjectById } from "@/lib/db/projects";
 import { GameVersionSchema, VersionActionSchema } from "@/lib/validation";
-import { badRequest, notFound, parseJsonBody, validationError } from "@/lib/api-helpers";
+import { badRequest, notFound, parseJsonBody, validationError, withApiErrorHandling } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 
-export async function PUT(request: Request, context: { params: Promise<{ projectId: string; versionId: string }> }) {
+export const PUT = withApiErrorHandling(async (request: Request, context: { params: Promise<{ projectId: string; versionId: string }> }) => {
   const { projectId, versionId } = await context.params;
 
   const body = await parseJsonBody(request);
@@ -15,14 +15,16 @@ export async function PUT(request: Request, context: { params: Promise<{ project
   const parsed = GameVersionSchema.safeParse(body.data);
   if (!parsed.success) return validationError("Invalid version data", parsed.error);
 
-  updateVersion(projectId, versionId, parsed.data);
+  const result = updateVersion(projectId, versionId, parsed.data);
+  if (result.status === "not-found") return notFound("Version");
+
   const project = getProjectById(projectId);
   if (!project) return notFound("Project");
 
-  return NextResponse.json({ project });
-}
+  return NextResponse.json({ project, versionId: result.versionId });
+});
 
-export async function PATCH(request: Request, context: { params: Promise<{ projectId: string; versionId: string }> }) {
+export const PATCH = withApiErrorHandling(async (request: Request, context: { params: Promise<{ projectId: string; versionId: string }> }) => {
   const { projectId, versionId } = await context.params;
 
   const body = await parseJsonBody(request);
@@ -34,25 +36,32 @@ export async function PATCH(request: Request, context: { params: Promise<{ proje
   const payload = patchParsed.data;
 
   if (payload.action === "publish") {
-    publishVersion(projectId, versionId);
+    const result = publishVersion(projectId, versionId);
+    if (result === "not-found") return notFound("Version");
+    if (result === "already-published") return badRequest("Version is already published.");
+
     const project = getProjectById(projectId);
     if (!project) return notFound("Project");
     return NextResponse.json({ project });
   }
 
   return badRequest("Unknown action.");
-}
+});
 
-export async function DELETE(_: Request, context: { params: Promise<{ projectId: string; versionId: string }> }) {
+export const DELETE = withApiErrorHandling(async (_: Request, context: { params: Promise<{ projectId: string; versionId: string }> }) => {
   const { projectId, versionId } = await context.params;
   const deleted = deleteVersion(projectId, versionId);
 
-  if (!deleted) {
-    return badRequest("Cannot delete — project not found or only one version remains.");
+  if (deleted === "last-version") {
+    return badRequest("Cannot delete the only remaining version.");
+  }
+
+  if (deleted === "not-found") {
+    return notFound("Version");
   }
 
   const project = getProjectById(projectId);
   if (!project) return notFound("Project");
 
   return NextResponse.json({ project });
-}
+});

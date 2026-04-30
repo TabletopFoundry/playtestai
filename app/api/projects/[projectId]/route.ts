@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
 import { deleteProject, getProjectById, updateProject } from "@/lib/db";
 import { UpdateProjectInputSchema } from "@/lib/validation";
-import { notFound, parseJsonBody, validationError } from "@/lib/api-helpers";
+import { notFound, parseJsonBody, validationError, withApiErrorHandling } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 
-export async function GET(_: Request, context: { params: Promise<{ projectId: string }> }) {
+export const GET = withApiErrorHandling(async (_: Request, context: { params: Promise<{ projectId: string }> }) => {
   const { projectId } = await context.params;
   const project = getProjectById(projectId);
 
   if (!project) return notFound("Project");
 
   return NextResponse.json({ project });
-}
+});
 
-export async function PUT(request: Request, context: { params: Promise<{ projectId: string }> }) {
+export const PUT = withApiErrorHandling(async (request: Request, context: { params: Promise<{ projectId: string }> }) => {
   const { projectId } = await context.params;
 
   const body = await parseJsonBody(request);
@@ -23,21 +23,24 @@ export async function PUT(request: Request, context: { params: Promise<{ project
   const parsed = UpdateProjectInputSchema.safeParse(body.data);
   if (!parsed.success) return validationError("Invalid project data", parsed.error);
 
+  const existingProject = getProjectById(projectId);
+  if (!existingProject) return notFound("Project");
+
   const project = updateProject(projectId, {
-    name: parsed.data.name?.trim() ?? "Untitled project",
-    description: parsed.data.description?.trim() ?? "",
+    name: parsed.data.name?.trim() ?? existingProject.name,
+    description: parsed.data.description?.trim() ?? existingProject.description,
   });
 
   if (!project) return notFound("Project");
 
   return NextResponse.json({ project });
-}
+});
 
-export async function DELETE(_: Request, context: { params: Promise<{ projectId: string }> }) {
+export const DELETE = withApiErrorHandling(async (_: Request, context: { params: Promise<{ projectId: string }> }) => {
   const { projectId } = await context.params;
   const deleted = deleteProject(projectId);
 
   if (!deleted) return notFound("Project");
 
   return new Response(null, { status: 204 });
-}
+});

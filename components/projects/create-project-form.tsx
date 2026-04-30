@@ -27,12 +27,17 @@ export function CreateProjectForm() {
       return;
     }
 
+    if (form.playerCountMin > form.playerCountMax) {
+      setError("Minimum players cannot exceed maximum players.");
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, name: form.name.trim() }),
       });
 
       if (!response.ok) {
@@ -85,7 +90,7 @@ export function CreateProjectForm() {
           <input
             type="number"
             min={2}
-            max={6}
+            max={10}
             value={form.playerCountMin}
             onChange={(event) => setForm((current) => ({ ...current, playerCountMin: Number(event.target.value) }))}
             className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none transition focus:border-cyan-400/40 focus-visible:ring-2 focus-visible:ring-cyan-400/50"
@@ -96,7 +101,7 @@ export function CreateProjectForm() {
           <input
             type="number"
             min={2}
-            max={6}
+            max={10}
             value={form.playerCountMax}
             onChange={(event) => setForm((current) => ({ ...current, playerCountMax: Number(event.target.value) }))}
             className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none transition focus:border-cyan-400/40 focus-visible:ring-2 focus-visible:ring-cyan-400/50"
@@ -116,7 +121,7 @@ export function CreateProjectForm() {
         </label>
       </div>
 
-      {error ? <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div> : null}
+      {error ? <div role="alert" className="rounded-2xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div> : null}
 
       <button
         type="submit"

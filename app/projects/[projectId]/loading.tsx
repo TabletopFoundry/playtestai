@@ -5,7 +5,7 @@ export default function ProjectLoading() {
   return (
     <div className="min-h-screen">
       <TopNav />
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl px-4 py-8 focus:outline-none sm:px-6 lg:px-8">
         <div className="space-y-6">
           <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6 sm:p-8">
             <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">

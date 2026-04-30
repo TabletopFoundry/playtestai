@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { createSimulationRun } from "@/lib/db";
 import { getProjectById } from "@/lib/db/projects";
 import { CreateRunInputSchema } from "@/lib/validation";
-import { badRequest, notFound, parseJsonBody, validationError } from "@/lib/api-helpers";
+import { badRequest, notFound, parseJsonBody, validationError, withApiErrorHandling } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 
-export async function POST(request: Request, context: { params: Promise<{ projectId: string }> }) {
+export const POST = withApiErrorHandling(async (request: Request, context: { params: Promise<{ projectId: string }> }) => {
   const { projectId } = await context.params;
 
   const body = await parseJsonBody(request);
@@ -36,4 +36,4 @@ export async function POST(request: Request, context: { params: Promise<{ projec
   if (!project) return notFound("Project");
 
   return NextResponse.json({ project }, { status: 201 });
-}
+});

@@ -62,7 +62,7 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
 
   const updateFromResponse = useCallback(
     async (response: Response, options?: { versionId?: string; keepStatus?: boolean }) => {
-      const payload = (await response.json()) as { project?: GameProject; error?: string };
+      const payload = (await response.json()) as { project?: GameProject; error?: string; versionId?: string };
       if (!response.ok || !payload.project) {
         throw new Error(payload.error ?? "Unexpected API error.");
       }
@@ -73,10 +73,12 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
       const nextRunId = payload.project.runs.find((run) => run.id === selectedRunIdRef.current)?.id ?? payload.project.runs[0]?.id ?? "";
       setSelectedRunId(nextRunId);
 
-      const nextVersionId = options?.versionId;
+      const nextVersionId = options?.versionId ?? payload.versionId;
       if (nextVersionId) {
+        selectedVersionIdRef.current = nextVersionId;
         syncVersionSelection(payload.project, nextVersionId);
       } else if (!payload.project.versions.find((version) => version.id === selectedVersionIdRef.current) && payload.project.versions[0]) {
+        selectedVersionIdRef.current = payload.project.versions[0].id;
         syncVersionSelection(payload.project, payload.project.versions[0].id);
       }
 
@@ -123,11 +125,12 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(workingVersion),
         });
-        const nextProject = await updateFromResponse(response, { versionId: workingVersion.id, keepStatus: silent });
-        if (!silent) {
-          setStatusMessage(`Saved ${workingVersion.label}.`);
+        const nextProject = await updateFromResponse(response, { keepStatus: silent });
+        const savedVersion = nextProject.versions.find((version) => version.id === selectedVersionIdRef.current) ?? nextProject.versions[0] ?? null;
+        if (!silent && savedVersion) {
+          setStatusMessage(`Saved ${savedVersion.label}.`);
         }
-        return nextProject.versions.find((version) => version.id === workingVersion.id) ?? null;
+        return savedVersion;
       } catch (caught) {
         setErrorMessage(caught instanceof Error ? caught.message : "Failed to save version.");
         return null;

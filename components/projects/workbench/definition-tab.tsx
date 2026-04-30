@@ -51,7 +51,11 @@ export function DefinitionTab({ state, savingProject, savingVersion, handleSaveP
 
     autosaveTimerRef.current = setTimeout(async () => {
       setAutosaveStatus("saving");
-      await handleSaveVersion(true);
+      const savedVersion = await handleSaveVersion(true);
+      if (!savedVersion) {
+        setAutosaveStatus("idle");
+        return;
+      }
       setAutosaveStatus("saved");
       resetTimerRef.current = setTimeout(() => setAutosaveStatus("idle"), 2000);
     }, 5000);
@@ -159,11 +163,11 @@ export function DefinitionTab({ state, savingProject, savingVersion, handleSaveP
           </label>
           <label className="space-y-2">
             <span className="text-sm text-slate-300">Min players</span>
-            <input type="number" min={2} max={6} value={workingVersion.playerCountMin} onChange={(event) => setWorkingVersion({ ...workingVersion, playerCountMin: Number(event.target.value) })} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
+            <input type="number" min={2} max={10} value={workingVersion.playerCountMin} onChange={(event) => setWorkingVersion({ ...workingVersion, playerCountMin: Number(event.target.value) })} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
           </label>
           <label className="space-y-2">
             <span className="text-sm text-slate-300">Max players</span>
-            <input type="number" min={2} max={6} value={workingVersion.playerCountMax} onChange={(event) => setWorkingVersion({ ...workingVersion, playerCountMax: Number(event.target.value) })} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
+            <input type="number" min={2} max={10} value={workingVersion.playerCountMax} onChange={(event) => setWorkingVersion({ ...workingVersion, playerCountMax: Number(event.target.value) })} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
           </label>
           <label className="space-y-2">
             <span className="text-sm text-slate-300">Win condition</span>

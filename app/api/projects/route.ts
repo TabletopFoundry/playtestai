@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { createProject, getProjectsSummary } from "@/lib/db";
 import { CreateProjectInputSchema } from "@/lib/validation";
-import { parseJsonBody, validationError } from "@/lib/api-helpers";
+import { parseJsonBody, validationError, withApiErrorHandling } from "@/lib/api-helpers";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export const GET = withApiErrorHandling(async () => {
   return NextResponse.json({ projects: getProjectsSummary() });
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withApiErrorHandling(async (request: Request) => {
   const body = await parseJsonBody(request);
   if ("error" in body) return body.error;
 
@@ -25,4 +25,4 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json({ projectId: project.id }, { status: 201 });
-}
+});

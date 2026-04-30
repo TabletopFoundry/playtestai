@@ -5,7 +5,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen">
       <TopNav />
-      <main className="flex min-h-[70vh] items-center justify-center px-4">
+      <main id="main-content" tabIndex={-1} className="flex min-h-[70vh] items-center justify-center px-4 focus:outline-none">
         <div className="max-w-md text-center">
           <p className="font-mono text-7xl font-bold text-cyan-200">404</p>
           <h1 className="mt-4 text-2xl font-semibold text-white">Page not found</h1>
