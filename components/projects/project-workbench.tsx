@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, type KeyboardEvent } from "react";
 import type { GameProject } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
 import { useWorkbenchState } from "./use-workbench-state";
@@ -23,6 +24,43 @@ const tabs: { id: ActiveTab; label: string }[] = [
 export function ProjectWorkbench({ initialProject }: { initialProject: GameProject }) {
   const state = useWorkbenchState(initialProject);
   const { project, activeTab, setActiveTab, selectedRun, statusMessage, errorMessage, savingProject, savingVersion } = state;
+  const tabRefs = useRef<Partial<Record<ActiveTab, HTMLButtonElement | null>>>({});
+
+  function handleTabListKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    let nextIndex = currentIndex;
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        nextIndex = (currentIndex + 1) % tabs.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    const nextTab = tabs[nextIndex];
+    if (!nextTab) {
+      return;
+    }
+
+    setActiveTab(nextTab.id);
+    tabRefs.current[nextTab.id]?.focus();
+  }
 
   return (
     <div className="space-y-6">
@@ -42,12 +80,16 @@ export function ProjectWorkbench({ initialProject }: { initialProject: GameProje
         </div>
 
         {/* ARIA tablist (QW-5) */}
-        <div className="mt-6 flex flex-wrap gap-3" role="tablist" aria-label="Workspace navigation">
+        <div className="mt-6 flex flex-wrap gap-3" role="tablist" aria-label="Workspace navigation" onKeyDown={handleTabListKeyDown}>
           {tabs.map((tab) => (
             <button
               key={tab.id}
+              ref={(element) => {
+                tabRefs.current[tab.id] = element;
+              }}
               type="button"
               role="tab"
+              tabIndex={activeTab === tab.id ? 0 : -1}
               aria-selected={activeTab === tab.id}
               aria-controls={`tabpanel-${tab.id}`}
               id={`tab-${tab.id}`}

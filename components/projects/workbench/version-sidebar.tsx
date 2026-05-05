@@ -31,39 +31,48 @@ export function VersionSidebar({ state }: VersionSidebarProps) {
   async function handleDelete() {
     if (!deleteTarget) return;
 
+    const target = deleteTarget;
+    let response: Response | null = null;
+    let closeDialog = false;
+    setErrorMessage(null);
+
     try {
-      let response: Response;
-      if (deleteTarget.type === "project") {
+      if (target.type === "project") {
         response = await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
         if (response.ok) {
+          closeDialog = true;
           router.push("/projects");
           return;
         }
-      } else if (deleteTarget.type === "version") {
-        response = await fetch(`/api/projects/${project.id}/versions/${deleteTarget.id}`, { method: "DELETE" });
+      } else if (target.type === "version") {
+        response = await fetch(`/api/projects/${project.id}/versions/${target.id}`, { method: "DELETE" });
         if (response.ok) {
           const nextProject = await updateFromResponse(response);
-          setStatusMessage(`Deleted version "${deleteTarget.label}".`);
-          if (selectedVersionId === deleteTarget.id && nextProject.versions[0]) {
+          setStatusMessage(`Deleted version "${target.label}".`);
+          if (selectedVersionId === target.id && nextProject.versions[0]) {
             syncVersionSelection(nextProject, nextProject.versions[0].id);
           }
+          closeDialog = true;
         }
       } else {
-        response = await fetch(`/api/projects/${project.id}/runs/${deleteTarget.id}`, { method: "DELETE" });
+        response = await fetch(`/api/projects/${project.id}/runs/${target.id}`, { method: "DELETE" });
         if (response.ok) {
           await updateFromResponse(response);
-          setStatusMessage(`Deleted run "${deleteTarget.label}".`);
+          setStatusMessage(`Deleted run "${target.label}".`);
+          closeDialog = true;
         }
       }
 
-      if (!response!.ok) {
-        const payload = (await response!.json()) as { error?: string };
-        throw new Error(payload.error ?? "Delete failed.");
+      if (!response?.ok) {
+        const payload = (await response?.json()) as { error?: string } | undefined;
+        throw new Error(payload?.error ?? "Delete failed.");
       }
     } catch (caught) {
       setErrorMessage(caught instanceof Error ? caught.message : "Delete failed.");
     } finally {
-      setDeleteTarget(null);
+      if (closeDialog) {
+        setDeleteTarget(null);
+      }
     }
   }
 
