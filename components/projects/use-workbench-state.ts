@@ -178,7 +178,6 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
     onRunSimulation: handleRunSimulationShortcut,
     onDismissMessages: handleDismissMessages,
     onSwitchTab: setActiveTab,
-    activeTab,
   });
 
   return {

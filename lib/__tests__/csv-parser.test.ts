@@ -48,4 +48,19 @@ Guard,3,3,2,2,1`;
     expect(cards[0]!.name).toBe("Rune Wolf");
     expect(cards[0]!.cost).toBe(3);
   });
+
+  it("parses quoted commas without splitting the field", () => {
+    const csv = `name,cost,power,quantity,notes,damage
+"Dragon, Fire",5,7,1,"Deals 3 damage, then draws 1",3`;
+    const cards = parseCsvCards(csv);
+    expect(cards[0]!.name).toBe("Dragon, Fire");
+    expect(cards[0]!.notes).toBe("Deals 3 damage, then draws 1");
+    expect(cards[0]!.stats).toEqual({ damage: 3 });
+  });
+
+  it("parses escaped quotes inside quoted fields", () => {
+    const csv = 'name,cost,power,quantity,notes\n"Archivist",2,1,2,"Says ""draw two"" on play"';
+    const cards = parseCsvCards(csv);
+    expect(cards[0]!.notes).toBe('Says "draw two" on play');
+  });
 });

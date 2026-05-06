@@ -71,11 +71,83 @@ export function createConfig(version: GameVersion, games = 500): SimulationConfi
   };
 }
 
+export function parseCsvRows(csvText: string) {
+  const input = csvText.trim();
+  if (!input) {
+    return [] as string[][];
+  }
+
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentCell = "";
+  let inQuotes = false;
+  let quotedCell = false;
+
+  function pushCell() {
+    currentRow.push(quotedCell ? currentCell : currentCell.trim());
+    currentCell = "";
+    quotedCell = false;
+  }
+
+  function pushRow() {
+    pushCell();
+    if (currentRow.some((cell) => cell !== "")) {
+      rows.push(currentRow);
+    }
+    currentRow = [];
+  }
+
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
+    if (!char) continue;
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (input[index + 1] === '"') {
+          currentCell += '"';
+          index += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        currentCell += char;
+      }
+      continue;
+    }
+
+    if (char === '"' && currentCell.trim() === "") {
+      currentCell = "";
+      quotedCell = true;
+      inQuotes = true;
+      continue;
+    }
+
+    if (char === ",") {
+      pushCell();
+      continue;
+    }
+
+    if (char === "\n" || char === "\r") {
+      if (char === "\r" && input[index + 1] === "\n") {
+        index += 1;
+      }
+      pushRow();
+      continue;
+    }
+
+    currentCell += char;
+  }
+
+  if (inQuotes) {
+    throw new Error("CSV contains an unterminated quoted field.");
+  }
+
+  pushRow();
+  return rows;
+}
+
 export function parseCsvCards(csvText: string) {
-  const rows = csvText
-    .trim()
-    .split(/\r?\n/)
-    .map((row) => row.split(",").map((cell) => cell.trim()));
+  const rows = parseCsvRows(csvText);
 
   if (rows.length < 2) {
     throw new Error("CSV needs a header row and at least one data row.");

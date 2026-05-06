@@ -10,7 +10,6 @@ interface KeyboardShortcutOptions {
   onRunSimulation: () => void;
   onDismissMessages: () => void;
   onSwitchTab: (tab: ActiveTab) => void;
-  activeTab: ActiveTab;
 }
 
 /** App-wide keyboard shortcuts for the project workbench. */
@@ -19,7 +18,6 @@ export function useKeyboardShortcuts({
   onRunSimulation,
   onDismissMessages,
   onSwitchTab,
-  activeTab,
 }: KeyboardShortcutOptions) {
   useEffect(() => {
     function handler(e: KeyboardEvent) {
@@ -61,25 +59,10 @@ export function useKeyboardShortcuts({
           return;
         }
 
-        // Arrow keys → Navigate tabs within tablist (when focused on a tab button)
-        if (target?.getAttribute("role") === "tab") {
-          const currentIdx = TAB_ORDER.indexOf(activeTab);
-          if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-            e.preventDefault();
-            const nextIdx = (currentIdx + 1) % TAB_ORDER.length;
-            onSwitchTab(TAB_ORDER[nextIdx]!);
-            document.getElementById(`tab-${TAB_ORDER[nextIdx]}`)?.focus();
-          } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-            e.preventDefault();
-            const prevIdx = (currentIdx - 1 + TAB_ORDER.length) % TAB_ORDER.length;
-            onSwitchTab(TAB_ORDER[prevIdx]!);
-            document.getElementById(`tab-${TAB_ORDER[prevIdx]}`)?.focus();
-          }
-        }
       }
     }
 
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [onSave, onRunSimulation, onDismissMessages, onSwitchTab, activeTab]);
+  }, [onSave, onRunSimulation, onDismissMessages, onSwitchTab]);
 }

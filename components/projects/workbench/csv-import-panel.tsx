@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import type { CardDefinition, GameVersion } from "@/lib/types";
 import { stringifyStats } from "@/lib/utils";
-import { parseCsvCards } from "./types";
+import { parseCsvCards, parseCsvRows } from "./types";
 
 type CsvImportMode = "replace" | "append";
 
@@ -15,10 +15,7 @@ interface CsvPreview {
 }
 
 function parseCsvForPreview(csvText: string): CsvPreview {
-  const rows = csvText
-    .trim()
-    .split(/\r?\n/)
-    .map((row) => row.split(",").map((cell) => cell.trim()));
+  const rows = parseCsvRows(csvText);
 
   if (rows.length < 2) {
     throw new Error("CSV needs a header row and at least one data row.");
