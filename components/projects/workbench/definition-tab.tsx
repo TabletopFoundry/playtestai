@@ -40,35 +40,52 @@ export function DefinitionTab({ state, savingProject, savingVersion, handleSaveP
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
+  const clearScheduledAutosave = useCallback(() => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+  }, []);
+
+  const clearAutosaveReset = useCallback(() => {
+    if (resetTimerRef.current) {
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
-    if (!dirty || !workingVersion) {
+    if (!dirty || !workingVersion || savingVersion) {
+      clearScheduledAutosave();
       return;
     }
 
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-    }
-
+    clearScheduledAutosave();
     autosaveTimerRef.current = setTimeout(async () => {
       setAutosaveStatus("saving");
       const savedVersion = await handleSaveVersion(true);
+      autosaveTimerRef.current = null;
       if (!savedVersion) {
         setAutosaveStatus("idle");
         return;
       }
+      clearAutosaveReset();
       setAutosaveStatus("saved");
-      resetTimerRef.current = setTimeout(() => setAutosaveStatus("idle"), 2000);
+      resetTimerRef.current = setTimeout(() => {
+        setAutosaveStatus("idle");
+        resetTimerRef.current = null;
+      }, 2000);
     }, 5000);
 
+    return clearScheduledAutosave;
+  }, [dirty, workingVersion, savingVersion, handleSaveVersion, clearScheduledAutosave, clearAutosaveReset]);
+
+  useEffect(() => {
     return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
-      }
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current);
-      }
+      clearScheduledAutosave();
+      clearAutosaveReset();
     };
-  }, [dirty, workingVersion, handleSaveVersion]);
+  }, [clearScheduledAutosave, clearAutosaveReset]);
 
   const deleteResource = useCallback(
     (index: number) => {
@@ -195,7 +212,17 @@ export function DefinitionTab({ state, savingProject, savingVersion, handleSaveP
           </label>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={() => void handleSaveVersion()} disabled={savingVersion} className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+          <button
+            type="button"
+            onClick={() => {
+              clearScheduledAutosave();
+              clearAutosaveReset();
+              setAutosaveStatus("idle");
+              void handleSaveVersion();
+            }}
+            disabled={savingVersion}
+            className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+          >
             {savingVersion ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save version
           </button>
@@ -203,8 +230,10 @@ export function DefinitionTab({ state, savingProject, savingVersion, handleSaveP
             <CopyPlus className="h-4 w-4" />
             Create snapshot
           </button>
-          {autosaveStatus === "saving" && <span className="text-sm text-slate-400">Saving...</span>}
-          {autosaveStatus === "saved" && <span className="text-sm text-cyan-200">Saved</span>}
+          <div className="min-h-5 text-sm" role="status" aria-live="polite">
+            {autosaveStatus === "saving" && <span className="text-slate-400">Saving...</span>}
+            {autosaveStatus === "saved" && <span className="text-cyan-200">Saved</span>}
+          </div>
         </div>
         {dirty ? <p className="mt-3 text-sm text-amber-200">Unsaved changes are ready to snapshot or simulate.</p> : null}
       </SectionCard>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Trash2 } from "lucide-react";
+import { Loader2, Lock, Trash2 } from "lucide-react";
 import { cn, formatDate, formatPercent } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { WorkbenchState } from "./types";
@@ -27,13 +27,37 @@ export function VersionSidebar({ state }: VersionSidebarProps) {
 
   const router = useRouter();
   const [deleteTarget, setDeleteTarget] = useState<{ type: "project" | "version" | "run"; id: string; label: string } | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
+  const [publishVersionId, setPublishVersionId] = useState<string | null>(null);
+
+  async function handlePublishVersion(versionId: string, label: string) {
+    if (publishVersionId || deletePending) return;
+
+    setPublishVersionId(versionId);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch(`/api/projects/${project.id}/versions/${versionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "publish" }),
+      });
+      await updateFromResponse(response);
+      setStatusMessage(`Published version "${label}". It is now locked.`);
+    } catch (caught) {
+      setErrorMessage(caught instanceof Error ? caught.message : "Failed to publish.");
+    } finally {
+      setPublishVersionId(null);
+    }
+  }
 
   async function handleDelete() {
-    if (!deleteTarget) return;
+    if (!deleteTarget || deletePending) return;
 
     const target = deleteTarget;
     let response: Response | null = null;
     let closeDialog = false;
+    setDeletePending(true);
     setErrorMessage(null);
 
     try {
@@ -70,6 +94,7 @@ export function VersionSidebar({ state }: VersionSidebarProps) {
     } catch (caught) {
       setErrorMessage(caught instanceof Error ? caught.message : "Delete failed.");
     } finally {
+      setDeletePending(false);
       if (closeDialog) {
         setDeleteTarget(null);
       }
@@ -89,9 +114,15 @@ export function VersionSidebar({ state }: VersionSidebarProps) {
               : `This will permanently delete the simulation run "${deleteTarget?.label}". This cannot be undone.`
         }
         confirmLabel="Delete"
+        pendingLabel="Deleting..."
         variant="danger"
+        busy={deletePending}
         onConfirm={() => void handleDelete()}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          if (!deletePending) {
+            setDeleteTarget(null);
+          }
+        }}
       />
 
       <SectionCard title="Versions" description="Published versions are locked. Editing a published version creates a new draft.">
@@ -121,31 +152,21 @@ export function VersionSidebar({ state }: VersionSidebarProps) {
                 {!version.published && (
                   <button
                     type="button"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch(`/api/projects/${project.id}/versions/${version.id}`, {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ action: "publish" }),
-                        });
-                        await updateFromResponse(response);
-                        setStatusMessage(`Published version "${version.label}". It is now locked.`);
-                      } catch (caught) {
-                        setErrorMessage(caught instanceof Error ? caught.message : "Failed to publish.");
-                      }
-                    }}
+                    onClick={() => void handlePublishVersion(version.id, version.label)}
+                    disabled={deletePending || publishVersionId !== null}
                     aria-label={`Publish version ${version.label}`}
-                    className="rounded-xl border border-white/10 p-1.5 text-slate-400 transition hover:border-cyan-400/40 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+                    className="rounded-xl border border-white/10 p-1.5 text-slate-400 transition hover:border-cyan-400/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
                   >
-                    <Lock className="h-3.5 w-3.5" />
+                    {publishVersionId === version.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
                   </button>
                 )}
                 {project.versions.length > 1 && (
                   <button
                     type="button"
                     onClick={() => setDeleteTarget({ type: "version", id: version.id, label: version.label })}
+                    disabled={deletePending || publishVersionId !== null}
                     aria-label={`Delete version ${version.label}`}
-                    className="rounded-xl border border-white/10 p-1.5 text-slate-400 transition hover:border-rose-500/40 hover:text-rose-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+                    className="rounded-xl border border-white/10 p-1.5 text-slate-400 transition hover:border-rose-500/40 hover:text-rose-200 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -185,8 +206,9 @@ export function VersionSidebar({ state }: VersionSidebarProps) {
                 <button
                   type="button"
                   onClick={() => setDeleteTarget({ type: "run", id: run.id, label: run.label })}
+                  disabled={deletePending || publishVersionId !== null}
                   aria-label={`Delete run ${run.label}`}
-                  className="absolute right-2 top-2 rounded-xl border border-white/10 p-1.5 text-slate-400 opacity-60 transition hover:border-rose-500/40 hover:text-rose-200 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+                  className="absolute right-2 top-2 rounded-xl border border-white/10 p-1.5 text-slate-400 opacity-60 transition hover:border-rose-500/40 hover:text-rose-200 group-hover:opacity-100 group-focus-within:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -212,7 +234,8 @@ export function VersionSidebar({ state }: VersionSidebarProps) {
         <button
           type="button"
           onClick={() => setDeleteTarget({ type: "project", id: project.id, label: project.name })}
-          className="mt-3 inline-flex items-center gap-2 rounded-full border border-rose-500/30 px-4 py-2 text-sm text-rose-200 transition hover:border-rose-500/50 hover:bg-rose-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50"
+          disabled={deletePending || publishVersionId !== null}
+          className="mt-3 inline-flex items-center gap-2 rounded-full border border-rose-500/30 px-4 py-2 text-sm text-rose-200 transition hover:border-rose-500/50 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50"
         >
           <Trash2 className="h-4 w-4" />
           Delete project

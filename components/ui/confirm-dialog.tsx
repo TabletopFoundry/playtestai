@@ -9,7 +9,9 @@ interface ConfirmDialogProps {
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  pendingLabel?: string;
   variant?: "danger" | "default";
+  busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -20,7 +22,9 @@ export function ConfirmDialog({
   description,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  pendingLabel,
   variant = "danger",
+  busy = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -46,11 +50,11 @@ export function ConfirmDialog({
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !busy) {
         onCancel();
       }
     },
-    [onCancel],
+    [busy, onCancel],
   );
 
   if (!open) return null;
@@ -60,11 +64,12 @@ export function ConfirmDialog({
       ref={dialogRef}
       onKeyDown={handleKeyDown}
       onClick={(event) => {
-        if (event.target === dialogRef.current) onCancel();
+        if (!busy && event.target === dialogRef.current) onCancel();
       }}
       className="fixed inset-0 z-50 m-auto max-w-md rounded-3xl border border-white/10 bg-slate-900 p-0 text-white shadow-2xl shadow-black/50 backdrop:bg-black/60"
       aria-labelledby="confirm-dialog-title"
       aria-describedby="confirm-dialog-desc"
+      aria-busy={busy}
     >
       <div className="p-6">
         <div className="flex items-start gap-4">
@@ -83,7 +88,8 @@ export function ConfirmDialog({
             ref={cancelBtnRef}
             type="button"
             onClick={onCancel}
-            className="rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+            disabled={busy}
+            className="rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
           >
             {cancelLabel}
           </button>
@@ -91,13 +97,14 @@ export function ConfirmDialog({
             ref={confirmBtnRef}
             type="button"
             onClick={onConfirm}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50 ${
+            disabled={busy}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50 ${
               variant === "danger"
                 ? "bg-rose-500 text-white hover:bg-rose-600"
                 : "bg-cyan-400 text-slate-950 hover:bg-cyan-300"
             }`}
           >
-            {confirmLabel}
+            {busy ? pendingLabel ?? confirmLabel : confirmLabel}
           </button>
         </div>
       </div>
