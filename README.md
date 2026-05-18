@@ -3,7 +3,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
-[![Tests](https://img.shields.io/badge/tests-127%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-141%20passing-brightgreen)](#testing)
 
 **AI-powered board game playtesting and balance analysis.** Define card-driven games, run
 thousands of automated playtests with AI agents, spot broken openers, and compare balance
@@ -22,7 +22,7 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Seed data loads automatically on first
-launch — you'll see example projects ready to simulate.
+launch in development and test environments — you'll see example projects ready to simulate.
 
 ---
 
@@ -128,6 +128,26 @@ The engine uses a simplified card battler loop designed to surface balance issue
 
 ---
 
+## Seed Data
+
+The app now boots with a richer deterministic demo catalog designed to exercise the full UI:
+
+- **8 seeded projects** spanning deck builder, TCG, party, and strategy styles
+- **6 active projects** with **5 versions each** (latest branches ready for A/B comparison)
+- **32-card catalogs** on active versions, plus mixed published/draft snapshots
+- **25 stored simulation runs** with pre-computed analytics, recommendations, and edge-case warnings
+- **Edge fixtures** for an empty archive project, a one-card version, and an intentionally extreme simulation result
+
+### Safety + bootstrap behavior
+
+- Seeding is **transactional** and **idempotent** (`INSERT OR IGNORE`), so re-running bootstrap won't duplicate rows.
+- Existing non-seed databases are left untouched unless the seed marker is already present.
+- Automatic seeding is **guarded in production**. To opt in explicitly, set:
+
+```bash
+PLAYTESTAI_ENABLE_SEEDING=true
+```
+
 ## API Endpoints
 
 | Method | Path | Description | Response |
@@ -150,10 +170,10 @@ The engine uses a simplified card battler loop designed to surface balance issue
 
 ## Testing
 
-Tests cover the simulation engine, agent strategies, game mechanics, validation logic, utility functions, and CSV parsing:
+Tests cover the simulation engine, agent strategies, game mechanics, validation logic, utility functions, CSV parsing, and seed/bootstrap rules:
 
 ```bash
-npm test              # Run all 127 tests
+npm test              # Run all 141 tests
 npm run test:watch    # Watch mode for development
 npm run test:coverage # Generate coverage report
 ```
@@ -162,7 +182,7 @@ npm run test:coverage # Generate coverage report
 
 ## Notes
 
-- **Seed data** is inserted automatically on first launch
+- **Seed data** is inserted automatically on first launch in development/test, and only in production when `PLAYTESTAI_ENABLE_SEEDING=true`
 - **Database** file is created at `data/playtestai.sqlite` — gitignored by default
 - **Simulations are deterministic** — same seed produces identical results
 - **Reports** can be exported as PDF via the browser print dialog

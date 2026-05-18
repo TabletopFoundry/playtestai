@@ -58,6 +58,11 @@ function initSchema(db: Database.Database) {
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
       FOREIGN KEY (version_id) REFERENCES versions(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS seed_metadata (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
 }
 
