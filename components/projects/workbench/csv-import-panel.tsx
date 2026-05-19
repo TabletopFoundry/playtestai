@@ -91,6 +91,16 @@ export function CsvImportPanel({
         <Upload className="h-5 w-5 text-cyan-200" />
       </div>
 
+      <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-300">
+        <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Template</p>
+        <code className="mt-3 block overflow-x-auto rounded-2xl bg-slate-950 px-3 py-3 font-mono text-xs text-cyan-200">
+          name,cost,power,quantity,score,draw,damage,notes
+        </code>
+        <p className="mt-3 text-xs leading-6 text-slate-400">
+          Every extra numeric column becomes a custom stat automatically. Use this as a starter header row for spreadsheet exports.
+        </p>
+      </div>
+
       <div className="mt-4">
         <label className="space-y-2">
           <span className="text-sm text-slate-300">Choose a CSV file</span>
