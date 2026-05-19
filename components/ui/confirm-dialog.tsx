@@ -31,12 +31,15 @@ export function ConfirmDialog({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
 
     if (open && !dialog.open) {
+      const activeElement = document.activeElement;
+      triggerRef.current = activeElement instanceof HTMLElement ? activeElement : null;
       dialog.showModal();
       if (variant === "danger") {
         cancelBtnRef.current?.focus();
@@ -45,6 +48,13 @@ export function ConfirmDialog({
       }
     } else if (!open && dialog.open) {
       dialog.close();
+      const trigger = triggerRef.current;
+      if (trigger?.isConnected) {
+        requestAnimationFrame(() => {
+          trigger.focus();
+        });
+      }
+      triggerRef.current = null;
     }
   }, [open, variant]);
 
