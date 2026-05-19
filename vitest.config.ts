@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     include: ["**/__tests__/**/*.test.{ts,tsx}", "**/*.test.{ts,tsx}"],
-    exclude: ["node_modules", ".next", "out"],
+    exclude: ["**/node_modules/**", ".next", "out", "website/.docusaurus/**", "website/build/**"],
     coverage: {
       provider: "v8",
       include: ["lib/**/*.ts", "components/**/*.ts"],

@@ -19,6 +19,9 @@ export function TopNav() {
           <Link href="/projects" className="rounded-full border border-white/10 px-4 py-2 transition hover:border-cyan-400/40 hover:text-white">
             Projects
           </Link>
+          <Link href="/status" className="rounded-full border border-white/10 px-4 py-2 transition hover:border-cyan-400/40 hover:text-white">
+            Status
+          </Link>
           <Link
             href="/projects/new"
             className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 font-medium text-slate-950 transition hover:bg-cyan-300"
