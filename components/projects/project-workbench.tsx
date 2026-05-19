@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, type KeyboardEvent } from "react";
+import { useMemo, useRef, type KeyboardEvent } from "react";
+import { ArrowRight, CheckCircle2, CircleAlert, Keyboard, PlayCircle, Sparkles } from "lucide-react";
 import type { GameProject } from "@/lib/types";
 import { cn, formatDate } from "@/lib/utils";
 import { useWorkbenchState } from "./use-workbench-state";
@@ -11,6 +12,7 @@ import { CompareTab } from "./workbench/compare-tab";
 import { ReportTab } from "./workbench/report-tab";
 import { VersionSidebar } from "./workbench/version-sidebar";
 import { MetricCard } from "./workbench/shared";
+import { countValidationIssues, getVersionStateLabel, getWorkspaceStatusSummary } from "./workbench/status-utils";
 import type { ActiveTab } from "./workbench/types";
 
 const tabs: { id: ActiveTab; label: string }[] = [
@@ -23,8 +25,25 @@ const tabs: { id: ActiveTab; label: string }[] = [
 
 export function ProjectWorkbench({ initialProject }: { initialProject: GameProject }) {
   const state = useWorkbenchState(initialProject);
-  const { project, activeTab, setActiveTab, selectedRun, statusMessage, errorMessage, savingProject, savingVersion } = state;
+  const {
+    project,
+    activeTab,
+    setActiveTab,
+    selectedRun,
+    statusMessage,
+    errorMessage,
+    savingProject,
+    savingVersion,
+    selectedVersion,
+    versionValidation,
+    dirty,
+  } = state;
   const tabRefs = useRef<Partial<Record<ActiveTab, HTMLButtonElement | null>>>({});
+  const validationCounts = useMemo(() => countValidationIssues(versionValidation), [versionValidation]);
+  const workspaceStatus = useMemo(
+    () => getWorkspaceStatusSummary({ version: selectedVersion, issues: versionValidation, selectedRun, dirty }),
+    [dirty, selectedRun, selectedVersion, versionValidation],
+  );
 
   function handleTabListKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
@@ -79,7 +98,102 @@ export function ProjectWorkbench({ initialProject }: { initialProject: GameProje
           </div>
         </div>
 
-        {/* ARIA tablist (QW-5) */}
+        <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+          <section
+            className={cn(
+              "rounded-3xl border p-5",
+              workspaceStatus.tone === "danger" && "border-rose-500/30 bg-rose-500/10",
+              workspaceStatus.tone === "warn" && "border-amber-500/30 bg-amber-500/10",
+              workspaceStatus.tone === "ready" && "border-emerald-500/20 bg-emerald-500/10",
+              workspaceStatus.tone === "accent" && "border-cyan-400/20 bg-cyan-400/10",
+            )}
+          >
+            <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.25em]">
+              <span className="rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-slate-200">
+                {selectedVersion?.label ?? "No version"}
+              </span>
+              {selectedVersion ? (
+                <span className="rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-slate-300">
+                  {getVersionStateLabel(selectedVersion)}
+                </span>
+              ) : null}
+              {dirty ? <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-amber-200">Unsaved</span> : null}
+              <span className="rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-slate-300">
+                {validationCounts.errors > 0
+                  ? `${validationCounts.errors} blocker${validationCounts.errors === 1 ? "" : "s"}`
+                  : validationCounts.warnings > 0
+                    ? `${validationCounts.warnings} warning${validationCounts.warnings === 1 ? "" : "s"}`
+                    : "No blockers"}
+              </span>
+            </div>
+
+            <div className="mt-4 flex items-start gap-3">
+              {workspaceStatus.tone === "danger" || workspaceStatus.tone === "warn" ? (
+                <CircleAlert className="mt-0.5 h-5 w-5 shrink-0 text-current" />
+              ) : (
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-current" />
+              )}
+              <div>
+                <h2 className="text-lg font-semibold text-white">{workspaceStatus.title}</h2>
+                <p className="mt-2 text-sm leading-7 text-slate-200/90">{workspaceStatus.description}</p>
+                <p className="mt-3 text-sm text-slate-300">
+                  {selectedRun
+                    ? `Selected benchmark: ${selectedRun.label} (${formatDate(selectedRun.createdAt)}).`
+                    : "No saved runs yet — start with a baseline benchmark once your ruleset is ready."}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab(validationCounts.errors > 0 ? "definition" : "simulate")}
+                className="inline-flex items-center gap-2 rounded-full bg-slate-950/80 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+              >
+                <PlayCircle className="h-4 w-4" />
+                {validationCounts.errors > 0 ? "Fix blockers" : "Run next simulation"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("compare")}
+                disabled={project.versions.length < 2}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyan-400/40 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+              >
+                <Sparkles className="h-4 w-4" />
+                Compare variants
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab(selectedRun ? "report" : "dashboard")}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyan-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+              >
+                <ArrowRight className="h-4 w-4" />
+                {selectedRun ? "Open latest report" : "Review dashboard guidance"}
+              </button>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-white/10 bg-slate-950/60 p-5">
+            <div className="flex items-center gap-2 text-cyan-200">
+              <Keyboard className="h-4 w-4" />
+              <p className="font-mono text-xs uppercase tracking-[0.3em]">Shortcut cheatsheet</p>
+            </div>
+            <ul className="mt-4 space-y-3 text-sm text-slate-300">
+              {[
+                ["⌘ / Ctrl + S", "Save the active version"],
+                ["⌘ / Ctrl + Enter", "Run a simulation from anywhere in the workspace"],
+                ["1–5", "Jump between workspace tabs"],
+                ["Esc", "Dismiss status and error banners"],
+              ].map(([shortcut, label]) => (
+                <li key={shortcut} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                  <span className="font-mono text-xs text-cyan-200">{shortcut}</span>
+                  <span className="text-right">{label}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+
         <div className="mt-6 flex flex-wrap gap-3" role="tablist" aria-label="Workspace navigation" onKeyDown={handleTabListKeyDown}>
           {tabs.map((tab) => (
             <button
@@ -112,7 +226,6 @@ export function ProjectWorkbench({ initialProject }: { initialProject: GameProje
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
-          {/* ARIA tabpanels — all panels stay mounted to preserve state (P1-6) */}
           <div role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard" className={activeTab !== "dashboard" ? "hidden" : undefined}>
             <DashboardTab selectedRun={selectedRun} setActiveTab={setActiveTab} />
           </div>
