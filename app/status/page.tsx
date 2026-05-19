@@ -94,8 +94,13 @@ export default function StatusPage() {
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Latest persisted workspace</p>
                 {latestProject ? (
                   <>
-                    <p className="mt-2 text-white">{latestProject.name}</p>
+                    <Link href={`/projects/${latestProject.id}`} className="mt-2 inline-block text-white underline decoration-cyan-300/30 underline-offset-4 transition hover:text-cyan-100">
+                      {latestProject.name}
+                    </Link>
                     <p className="mt-2 text-slate-400">Updated {formatDate(latestProject.updatedAt)}</p>
+                    <Link href={`/projects/${latestProject.id}`} className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyan-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+                      Open workspace
+                    </Link>
                   </>
                 ) : (
                   <p className="mt-2 text-slate-400">No projects are currently stored.</p>
@@ -105,8 +110,13 @@ export default function StatusPage() {
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Latest benchmark</p>
                 {latestRun ? (
                   <>
-                    <p className="mt-2 text-white">{latestRun.label}</p>
+                    <Link href={`/projects/${latestRun.projectId}/report?runId=${latestRun.id}`} className="mt-2 inline-block text-white underline decoration-cyan-300/30 underline-offset-4 transition hover:text-cyan-100">
+                      {latestRun.label}
+                    </Link>
                     <p className="mt-2 text-slate-400">Captured {formatDate(latestRun.createdAt)}</p>
+                    <Link href={`/projects/${latestRun.projectId}/report?runId=${latestRun.id}`} className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyan-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+                      Open report
+                    </Link>
                   </>
                 ) : (
                   <p className="mt-2 text-slate-400">No simulation history has been stored yet.</p>
