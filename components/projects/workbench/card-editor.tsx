@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import type { CardDefinition, GameVersion } from "@/lib/types";
 import { parseStatsText, stringifyStats } from "@/lib/utils";
@@ -14,6 +15,22 @@ interface CardEditorProps {
 }
 
 export function CardEditor({ workingVersion, setWorkingVersion, cardStatsInput, setCardStatsInput, onDeleteCard }: CardEditorProps) {
+  const cardNameRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [pendingFocusCardId, setPendingFocusCardId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingFocusCardId) {
+      return;
+    }
+
+    const input = cardNameRefs.current[pendingFocusCardId];
+    if (input) {
+      input.focus();
+      input.select();
+      setPendingFocusCardId(null);
+    }
+  }, [pendingFocusCardId, workingVersion.cards]);
+
   const updateCard = (index: number, field: keyof CardDefinition, value: string | number | Record<string, number>) => {
     setWorkingVersion({
       ...workingVersion,
@@ -27,6 +44,7 @@ export function CardEditor({ workingVersion, setWorkingVersion, cardStatsInput, 
     const card = emptyCard();
     setWorkingVersion({ ...workingVersion, cards: [...workingVersion.cards, card] });
     setCardStatsInput((current: Record<string, string>) => ({ ...current, [card.id]: stringifyStats(card.stats) }));
+    setPendingFocusCardId(card.id);
   };
 
   return (
@@ -67,7 +85,15 @@ export function CardEditor({ workingVersion, setWorkingVersion, cardStatsInput, 
               <div key={card.id} className="grid gap-3 rounded-3xl border border-white/10 bg-slate-950/50 p-4 xl:grid-cols-[1.4fr_repeat(3,minmax(0,110px))_1.6fr_auto]">
                 <label className="space-y-1">
                   <span className="text-xs text-slate-500 xl:hidden">Name</span>
-                  <input value={card.name} onChange={(event) => updateCard(index, "name", event.target.value)} placeholder="Card name" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
+                  <input
+                    ref={(element) => {
+                      cardNameRefs.current[card.id] = element;
+                    }}
+                    value={card.name}
+                    onChange={(event) => updateCard(index, "name", event.target.value)}
+                    placeholder="Card name"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+                  />
                 </label>
                 <label className="space-y-1">
                   <span className="text-xs text-slate-500 xl:hidden">Cost</span>

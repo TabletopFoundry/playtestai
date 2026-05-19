@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import type { GameVersion } from "@/lib/types";
 import { SectionCard } from "./shared";
@@ -11,6 +12,22 @@ interface ResourceEditorProps {
 }
 
 export function ResourceEditor({ workingVersion, setWorkingVersion, onDeleteResource }: ResourceEditorProps) {
+  const resourceNameRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [pendingFocusResourceId, setPendingFocusResourceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingFocusResourceId) {
+      return;
+    }
+
+    const input = resourceNameRefs.current[pendingFocusResourceId];
+    if (input) {
+      input.focus();
+      input.select();
+      setPendingFocusResourceId(null);
+    }
+  }, [pendingFocusResourceId, workingVersion.resources]);
+
   const updateResource = (index: number, field: keyof GameVersion["resources"][number], value: string | number) => {
     setWorkingVersion({
       ...workingVersion,
@@ -21,10 +38,12 @@ export function ResourceEditor({ workingVersion, setWorkingVersion, onDeleteReso
   };
 
   const handleAddResource = () => {
+    const newResource = { id: crypto.randomUUID(), name: "New resource", startAmount: 0, gainPerTurn: 1 };
     setWorkingVersion({
       ...workingVersion,
-      resources: [...workingVersion.resources, { id: crypto.randomUUID(), name: "New resource", startAmount: 0, gainPerTurn: 1 }],
+      resources: [...workingVersion.resources, newResource],
     });
+    setPendingFocusResourceId(newResource.id);
   };
 
   return (
@@ -59,7 +78,15 @@ export function ResourceEditor({ workingVersion, setWorkingVersion, onDeleteReso
               <div key={resource.id} className="grid gap-3 rounded-3xl border border-white/10 bg-slate-950/50 p-4 md:grid-cols-[1.3fr_repeat(2,minmax(0,1fr))_auto]">
                 <label className="space-y-1">
                   <span className="text-xs text-slate-500 md:hidden">Name</span>
-                  <input value={resource.name} onChange={(event) => updateResource(index, "name", event.target.value)} placeholder="Resource name" className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
+                  <input
+                    ref={(element) => {
+                      resourceNameRefs.current[resource.id] = element;
+                    }}
+                    value={resource.name}
+                    onChange={(event) => updateResource(index, "name", event.target.value)}
+                    placeholder="Resource name"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+                  />
                 </label>
                 <label className="space-y-1">
                   <span className="text-xs text-slate-500 md:hidden">Start amount</span>
