@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getProjectById } from "@/lib/db";
-import { formatDate, formatPercent } from "@/lib/utils";
+import { cn, formatDate, formatPercent } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +27,10 @@ export default async function ReportPage({
     notFound();
   }
 
-  const run = project.runs.find((candidate) => candidate.id === runId) ?? project.runs[0];
+  const requestedRun = runId ? project.runs.find((candidate) => candidate.id === runId) : null;
+  const run = requestedRun ?? project.runs[0];
   const version = project.versions.find((candidate) => candidate.id === run?.versionId) ?? project.versions[0];
+  const showingFallbackRun = Boolean(runId && !requestedRun && run);
 
   if (!run || !version) {
     notFound();
@@ -51,6 +53,39 @@ export default async function ReportPage({
           </Link>
         </div>
       </div>
+
+      {showingFallbackRun ? (
+        <div className="mt-6 rounded-3xl border border-amber-500/30 bg-amber-500/10 px-4 py-4 text-sm text-amber-200 print:hidden">
+          The requested run could not be found. Showing the latest available report instead.
+        </div>
+      ) : null}
+
+      <section className="mt-6 rounded-[2rem] border border-white/10 bg-white/5 p-6 print:hidden print:border-slate-200 print:bg-white">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-[0.3em] text-cyan-200">Report context</p>
+            <h2 className="mt-2 text-xl font-semibold text-white">Switch between saved benchmarks</h2>
+            <p className="mt-2 text-sm text-slate-400">Use these shortcuts to review a different run without returning to the workspace.</p>
+          </div>
+          <p className="text-sm text-slate-400">Showing {run.label}</p>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {project.runs.map((candidate) => (
+            <Link
+              key={candidate.id}
+              href={`/projects/${project.id}/report?runId=${candidate.id}`}
+              className={cn(
+                "rounded-full border px-4 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
+                candidate.id === run.id
+                  ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-100"
+                  : "border-white/10 text-white hover:border-cyan-400/40",
+              )}
+            >
+              {candidate.label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="mt-8 grid gap-4 md:grid-cols-4">
         {[
