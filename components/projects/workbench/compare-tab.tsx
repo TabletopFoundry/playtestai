@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CopyPlus, Loader2, Swords, TableProperties } from "lucide-react";
+import { CopyPlus, Loader2, Swords, TableProperties, X } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -13,10 +13,11 @@ import {
   YAxis,
 } from "recharts";
 import { simulateBatchAsync } from "@/lib/simulation/engine";
-import type { SimulationBatchResult, SimulationConfig } from "@/lib/types";
-import { formatPercent } from "@/lib/utils";
+import type { AgentType, SimulationBatchResult, SimulationConfig } from "@/lib/types";
+import { agentLabel, formatPercent } from "@/lib/utils";
+import { getVersionStateLabel } from "./status-utils";
 import type { WorkbenchState } from "./types";
-import { createConfig, defaultAgents, normalizeConfig } from "./types";
+import { createConfig, defaultAgents, getSharedPlayerRange, normalizeConfig, syncAgentTypes } from "./types";
 import { MetricCard, SectionCard, darkTooltipProps } from "./shared";
 
 interface CompareTabProps {
@@ -51,16 +52,40 @@ export function CompareTab({ state }: CompareTabProps) {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Abort any in-flight comparison on unmount
-  useEffect(() => () => { abortControllerRef.current?.abort(); }, []);
+  useEffect(() => () => {
+    abortControllerRef.current?.abort();
+  }, []);
+
+  const selectedVersionA = project.versions.find((version) => version.id === compareVersionAId) ?? project.versions[0] ?? null;
+  const fallbackVersionB = project.versions.find((version) => version.id !== (selectedVersionA?.id ?? "")) ?? project.versions[0] ?? null;
+  const selectedVersionB =
+    project.versions.find((version) => version.id === compareVersionBId && version.id !== (selectedVersionA?.id ?? "")) ??
+    fallbackVersionB;
 
   const compareVersions = useMemo(
     () => ({
-      versionA: project.versions.find((version) => version.id === comparison?.versionAId) ?? project.versions.find((version) => version.id === compareVersionAId),
-      versionB: project.versions.find((version) => version.id === comparison?.versionBId) ?? project.versions.find((version) => version.id === compareVersionBId),
+      versionA: project.versions.find((version) => version.id === comparison?.versionAId) ?? selectedVersionA,
+      versionB: project.versions.find((version) => version.id === comparison?.versionBId) ?? selectedVersionB,
     }),
-    [compareVersionAId, compareVersionBId, comparison, project.versions],
+    [comparison, project.versions, selectedVersionA, selectedVersionB],
   );
+
+  const sharedPlayerRange = useMemo(
+    () => getSharedPlayerRange(selectedVersionA, selectedVersionB),
+    [selectedVersionA, selectedVersionB],
+  );
+
+  const notEnoughVersions = project.versions.length < 2;
+  const sharedPlayerCount = sharedPlayerRange
+    ? Math.min(Math.max(compareConfig.playerCount, sharedPlayerRange.min), sharedPlayerRange.max)
+    : compareConfig.playerCount;
+  const sharedConfig: SimulationConfig = sharedPlayerRange
+    ? {
+        ...compareConfig,
+        playerCount: sharedPlayerCount,
+        agentTypes: syncAgentTypes(sharedPlayerCount, compareConfig.agentTypes),
+      }
+    : compareConfig;
 
   const comparisonWinner = useMemo(() => {
     if (!comparison) return null;
@@ -92,30 +117,37 @@ export function CompareTab({ state }: CompareTabProps) {
     setErrorMessage(null);
     setStatusMessage(null);
 
-    const versionA = project.versions.find((version) => version.id === compareVersionAId);
-    const versionB = project.versions.find((version) => version.id === compareVersionBId);
+    const versionA = selectedVersionA;
+    const versionB = selectedVersionB;
+    const playerRange = getSharedPlayerRange(versionA, versionB);
 
     if (!versionA || !versionB) {
       setErrorMessage("Choose two saved versions to compare.");
       return;
     }
 
+    if (!playerRange) {
+      setErrorMessage("These versions do not overlap on player count, so they cannot be compared fairly.");
+      return;
+    }
+
     setCompareLoading(true);
     setCompareProgress(0);
 
-    // Abort any in-flight comparison before starting a new one
     abortControllerRef.current?.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
     try {
-      const configA = normalizeConfig(versionA, compareConfig);
-      const configB = normalizeConfig(versionB, compareConfig);
+      const configA = normalizeConfig(versionA, sharedConfig);
+      const configB = normalizeConfig(versionB, sharedConfig);
+      setCompareConfig(configA);
       const resultA = await simulateBatchAsync(versionA, configA, (value) => setCompareProgress(value / 2), controller.signal);
       const resultB = await simulateBatchAsync(versionB, configB, (value) => setCompareProgress(50 + value / 2), controller.signal);
       setComparison({ versionAId: versionA.id, versionBId: versionB.id, resultA, resultB });
       setStatusMessage("A/B comparison complete. Review the recommendation below.");
     } catch (caught) {
+      if (caught instanceof DOMException && caught.name === "AbortError") return;
       setErrorMessage(caught instanceof Error ? caught.message : "Comparison failed.");
     } finally {
       setCompareLoading(false);
@@ -123,7 +155,14 @@ export function CompareTab({ state }: CompareTabProps) {
     }
   }
 
-  const notEnoughVersions = project.versions.length < 2;
+  function handleCancelComparison() {
+    if (!compareLoading) {
+      return;
+    }
+
+    abortControllerRef.current?.abort();
+    setStatusMessage("A/B comparison cancelled before completion.");
+  }
 
   return (
     <div className="space-y-6">
@@ -138,38 +177,124 @@ export function CompareTab({ state }: CompareTabProps) {
             Edit card stats
           </button>
         </div>
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <label className="space-y-2">
-            <span className="text-sm text-slate-300">Version A</span>
-            <select value={compareVersionAId} onChange={(event) => setCompareVersionAId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
-              {project.versions.map((version) => (
-                <option key={version.id} value={version.id}>{version.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm text-slate-300">Version B</span>
-            <select value={compareVersionBId} onChange={(event) => setCompareVersionBId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
-              {project.versions.map((version) => (
-                <option key={version.id} value={version.id}>{version.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm text-slate-300">Games</span>
-            <input type="number" min={100} max={5000} step={100} value={compareConfig.games} onChange={(event) => setCompareConfig((current) => ({ ...current, games: Number(event.target.value) }))} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm text-slate-300">Player count</span>
-            <input type="number" min={2} max={4} value={compareConfig.playerCount} onChange={(event) => setCompareConfig((current) => ({ ...current, playerCount: Number(event.target.value), agentTypes: defaultAgents(Number(event.target.value)) }))} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
-          </label>
+
+        <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.85fr)]">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <label className="space-y-2">
+              <span className="text-sm text-slate-300">Version A</span>
+              <select value={selectedVersionA?.id ?? ""} onChange={(event) => setCompareVersionAId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+                {project.versions.map((version) => (
+                  <option key={version.id} value={version.id}>{version.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-2">
+              <span className="text-sm text-slate-300">Version B</span>
+              <select value={selectedVersionB?.id ?? ""} onChange={(event) => setCompareVersionBId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+                {project.versions.map((version) => (
+                  <option key={version.id} value={version.id}>{version.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-2">
+              <span className="text-sm text-slate-300">Games</span>
+              <input type="number" min={100} max={5000} step={100} value={compareConfig.games} onChange={(event) => setCompareConfig((current) => ({ ...current, games: Number(event.target.value) }))} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
+            </label>
+            <label className="space-y-2">
+              <span className="text-sm text-slate-300">Seed</span>
+              <input type="number" value={compareConfig.seed} onChange={(event) => setCompareConfig((current) => ({ ...current, seed: Number(event.target.value) }))} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50" />
+            </label>
+            <label className="space-y-2 md:col-span-2">
+              <span className="text-sm text-slate-300">Shared player count</span>
+              <input
+                type="number"
+                min={sharedPlayerRange?.min ?? 2}
+                max={sharedPlayerRange?.max ?? 2}
+                value={sharedConfig.playerCount}
+                disabled={!sharedPlayerRange}
+                onChange={(event) => {
+                  const playerCount = Number(event.target.value);
+                  setCompareConfig({
+                    ...sharedConfig,
+                    playerCount,
+                    agentTypes: syncAgentTypes(playerCount, sharedConfig.agentTypes),
+                  });
+                }}
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50 disabled:cursor-not-allowed disabled:opacity-60"
+              />
+            </label>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-slate-950/60 p-4 text-sm text-slate-300">
+            <p className="font-medium text-white">Comparison fairness metadata</p>
+            <dl className="mt-3 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <dt>{compareVersions.versionA?.label ?? "Version A"}</dt>
+                <dd>{compareVersions.versionA ? getVersionStateLabel(compareVersions.versionA) : "Missing"}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>{compareVersions.versionB?.label ?? "Version B"}</dt>
+                <dd>{compareVersions.versionB ? getVersionStateLabel(compareVersions.versionB) : "Missing"}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>Shared seat range</dt>
+                <dd>{sharedPlayerRange ? `${sharedPlayerRange.min}-${sharedPlayerRange.max}` : "No overlap"}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>Seat mix</dt>
+                <dd className="text-right">{sharedConfig.agentTypes.map((agent) => agentLabel(agent)).join(" / ")}</dd>
+              </div>
+            </dl>
+            <p className="mt-4 text-xs leading-6 text-slate-400">
+              Both variants run with the same games, seed, seat count, and seat-agent lineup so the comparison stays apples-to-apples.
+            </p>
+          </div>
         </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: sharedConfig.playerCount }, (_, index) => (
+            <label key={`compare-seat-${index + 1}`} className="space-y-2 rounded-3xl border border-white/10 bg-slate-950/60 p-4">
+              <span className="text-sm text-slate-300">Seat {index + 1} agent</span>
+              <select
+                value={sharedConfig.agentTypes[index] ?? "random"}
+                onChange={(event) =>
+                  setCompareConfig({
+                    ...sharedConfig,
+                    agentTypes: sharedConfig.agentTypes.map((agent, agentIndex) => (agentIndex === index ? (event.target.value as AgentType) : agent)),
+                  })
+                }
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+              >
+                <option value="random">Random</option>
+                <option value="greedy">Greedy</option>
+                <option value="balanced">Balanced</option>
+              </select>
+            </label>
+          ))}
+        </div>
+
+        {!sharedPlayerRange && !notEnoughVersions ? (
+          <div className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            The selected versions do not share a common player-count range. Pick versions that overlap to run a fair comparison.
+          </div>
+        ) : null}
+
         {compareLoading ? (
           <div className="mt-5 rounded-3xl border border-cyan-400/20 bg-cyan-400/5 p-4" aria-busy="true">
             <p className="sr-only" aria-live="polite">Comparison {compareProgress.toFixed(0)}% complete.</p>
-            <div className="flex items-center justify-between text-sm text-cyan-100">
+            <div className="flex items-center justify-between gap-3 text-sm text-cyan-100">
               <span>Comparing variants...</span>
-              <span>{compareProgress.toFixed(0)}%</span>
+              <div className="flex items-center gap-3">
+                <span>{compareProgress.toFixed(0)}%</span>
+                <button
+                  type="button"
+                  onClick={handleCancelComparison}
+                  className="inline-flex items-center gap-2 rounded-full border border-cyan-300/30 px-3 py-1.5 text-xs font-medium text-cyan-50 transition hover:border-cyan-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Cancel compare
+                </button>
+              </div>
             </div>
             <div
               className="mt-3 h-3 rounded-full bg-white/10"
@@ -185,14 +310,15 @@ export function CompareTab({ state }: CompareTabProps) {
           </div>
         ) : null}
 
-        {/* QW-8: tooltip when < 2 versions */}
         <div className="mt-5 flex items-center gap-3">
-          <button type="button" onClick={() => void handleRunComparison()} disabled={compareLoading || notEnoughVersions} className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+          <button type="button" onClick={() => void handleRunComparison()} disabled={compareLoading || notEnoughVersions || !sharedPlayerRange} className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
             {compareLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Swords className="h-4 w-4" />}
             Run A/B comparison
           </button>
-          {notEnoughVersions && (
+          {notEnoughVersions ? (
             <span className="text-sm text-slate-400">Create a snapshot first to have two versions to compare.</span>
+          ) : (
+            <span className="text-sm text-slate-400">The same seed and seat mix are reused for both variants.</span>
           )}
         </div>
       </SectionCard>

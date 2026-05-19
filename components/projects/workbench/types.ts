@@ -51,13 +51,27 @@ export function defaultAgents(playerCount: number): AgentType[] {
   return Array.from({ length: playerCount }, (_, index) => AGENT_CYCLE[index % 3]!);
 }
 
+export function syncAgentTypes(playerCount: number, agentTypes: AgentType[]): AgentType[] {
+  return Array.from({ length: playerCount }, (_, index) => agentTypes[index] ?? defaultAgents(playerCount)[index] ?? "random");
+}
+
+export function getSharedPlayerRange(versionA: GameVersion | null | undefined, versionB: GameVersion | null | undefined) {
+  if (!versionA || !versionB) {
+    return null;
+  }
+
+  const min = Math.max(versionA.playerCountMin, versionB.playerCountMin);
+  const max = Math.min(versionA.playerCountMax, versionB.playerCountMax);
+  return min <= max ? { min, max } : null;
+}
+
 export function normalizeConfig(version: GameVersion, config: SimulationConfig): SimulationConfig {
   const playerCount = Math.min(Math.max(config.playerCount, version.playerCountMin), version.playerCountMax);
   return {
     games: Math.min(Math.max(config.games, 100), 10000),
     playerCount,
     seed: Number.isFinite(config.seed) ? config.seed : 1337,
-    agentTypes: Array.from({ length: playerCount }, (_, index) => config.agentTypes[index] ?? defaultAgents(playerCount)[index] ?? "random"),
+    agentTypes: syncAgentTypes(playerCount, config.agentTypes),
   };
 }
 
