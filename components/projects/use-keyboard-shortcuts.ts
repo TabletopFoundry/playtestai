@@ -21,6 +21,10 @@ export function useKeyboardShortcuts({
 }: KeyboardShortcutOptions) {
   useEffect(() => {
     function handler(e: KeyboardEvent) {
+      if (e.defaultPrevented || document.querySelector("dialog[open]")) {
+        return;
+      }
+
       const target = e.target as HTMLElement | null;
       const inInput =
         target?.tagName === "INPUT" ||
