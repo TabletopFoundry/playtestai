@@ -93,7 +93,7 @@ export function ProjectWorkbench({ initialProject }: { initialProject: GameProje
           <div className="grid gap-3 sm:grid-cols-4">
             <MetricCard label="Versions" value={String(project.versions.length)} />
             <MetricCard label="Runs" value={String(project.runs.length)} />
-            <MetricCard label="Current balance" value={selectedRun ? String(Math.round(selectedRun.result.summary.overallBalanceScore)) : "--"} tone="accent" />
+            <MetricCard label="Benchmark score" value={selectedRun ? String(Math.round(selectedRun.result.summary.overallBalanceScore)) : "--"} tone="accent" />
             <MetricCard label="Updated" value={formatDate(project.updatedAt)} />
           </div>
         </div>
@@ -138,7 +138,7 @@ export function ProjectWorkbench({ initialProject }: { initialProject: GameProje
                 <p className="mt-2 text-sm leading-7 text-slate-200/90">{workspaceStatus.description}</p>
                 <p className="mt-3 text-sm text-slate-300">
                   {selectedRun
-                    ? `Selected benchmark: ${selectedRun.label} (${formatDate(selectedRun.createdAt)}).`
+                    ? `Selected benchmark: ${selectedRun.label} · ${project.versions.find((version) => version.id === selectedRun.versionId)?.label ?? "Unknown version"} · ${formatDate(selectedRun.createdAt)}.`
                     : "No saved runs yet — start with a baseline benchmark once your ruleset is ready."}
                 </p>
               </div>
@@ -227,7 +227,7 @@ export function ProjectWorkbench({ initialProject }: { initialProject: GameProje
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           <div role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard" className={activeTab !== "dashboard" ? "hidden" : undefined}>
-            <DashboardTab selectedRun={selectedRun} setActiveTab={setActiveTab} />
+            <DashboardTab project={project} selectedRun={selectedRun} setActiveTab={setActiveTab} />
           </div>
 
           <div role="tabpanel" id="tabpanel-definition" aria-labelledby="tab-definition" className={activeTab !== "definition" ? "hidden" : undefined}>

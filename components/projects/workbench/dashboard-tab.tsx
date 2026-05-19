@@ -14,12 +14,13 @@ import {
   YAxis,
 } from "recharts";
 import type { GameProject } from "@/lib/types";
-import { agentLabel, formatPercent } from "@/lib/utils";
+import { agentLabel, formatDate, formatPercent } from "@/lib/utils";
 import { escapeCsvField } from "@/lib/csv-export";
 import type { ActiveTab, CardSortKey } from "./types";
 import { MetricCard, SectionCard, darkTooltipProps } from "./shared";
 
 interface DashboardTabProps {
+  project: GameProject;
   selectedRun: GameProject["runs"][number] | null;
   setActiveTab: (tab: ActiveTab) => void;
 }
@@ -67,8 +68,11 @@ function downloadCsv(content: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function DashboardTab({ selectedRun, setActiveTab }: DashboardTabProps) {
+export function DashboardTab({ project, selectedRun, setActiveTab }: DashboardTabProps) {
   const [cardSortKey, setCardSortKey] = useState<CardSortKey>("powerScore");
+  const selectedRunVersion = selectedRun
+    ? project.versions.find((version) => version.id === selectedRun.versionId) ?? null
+    : null;
 
   const sortedCardRankings = useMemo(() => {
     if (!selectedRun) return [];
@@ -113,6 +117,23 @@ export function DashboardTab({ selectedRun, setActiveTab }: DashboardTabProps) {
 
   return (
     <div className="space-y-6">
+      <SectionCard title="Selected benchmark context" description="Keep the active analytics tied to the exact saved run you are reviewing.">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1.1fr)_repeat(3,minmax(0,0.6fr))]">
+          <div className="rounded-3xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+            <p className="font-medium text-white">{selectedRun.label}</p>
+            <p className="mt-2 text-sm text-slate-300">
+              Source version {selectedRunVersion?.label ?? "Unknown version"} · captured {formatDate(selectedRun.createdAt)}.
+            </p>
+            <p className="mt-3 text-xs uppercase tracking-[0.24em] text-cyan-200">
+              Seat mix: {selectedRun.config.agentTypes.map((agent) => agentLabel(agent)).join(" / ")}
+            </p>
+          </div>
+          <MetricCard label="Games" value={String(selectedRun.config.games)} />
+          <MetricCard label="Seats" value={String(selectedRun.config.playerCount)} />
+          <MetricCard label="Seed" value={String(selectedRun.config.seed)} />
+        </div>
+      </SectionCard>
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Balance score" value={`${Math.round(selectedRun.result.summary.overallBalanceScore)}`} tone="accent" />
         <MetricCard label="Avg turns" value={selectedRun.result.summary.averageTurns.toFixed(1)} />
