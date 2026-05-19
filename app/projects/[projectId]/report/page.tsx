@@ -28,12 +28,48 @@ export default async function ReportPage({
   }
 
   const requestedRun = runId ? project.runs.find((candidate) => candidate.id === runId) : null;
-  const run = requestedRun ?? project.runs[0];
-  const version = project.versions.find((candidate) => candidate.id === run?.versionId) ?? project.versions[0];
+  const run = requestedRun ?? project.runs[0] ?? null;
+  const version = project.versions.find((candidate) => candidate.id === run?.versionId) ?? project.versions[0] ?? null;
   const showingFallbackRun = Boolean(runId && !requestedRun && run);
 
-  if (!run || !version) {
+  if (!version) {
     notFound();
+  }
+
+  if (!run) {
+    return (
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-4xl px-4 py-10 text-slate-100 focus:outline-none sm:px-6 lg:px-8">
+        <div className="rounded-[2rem] border border-white/10 bg-white/5 p-8">
+          <p className="font-mono text-xs uppercase tracking-[0.35em] text-cyan-200">Balance report</p>
+          <h1 className="mt-3 text-4xl font-semibold">{project.name}</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">{project.description}</p>
+          <div className="mt-6 inline-flex rounded-full border border-white/10 bg-slate-950/60 px-4 py-2 text-sm text-slate-300">
+            Current version: {version.label}
+          </div>
+        </div>
+
+        <section className="mt-6 rounded-[2rem] border border-cyan-400/20 bg-cyan-400/5 p-6">
+          <p className="font-mono text-xs uppercase tracking-[0.3em] text-cyan-200">Report unavailable</p>
+          <h2 className="mt-3 text-2xl font-semibold text-white">No saved benchmarks are available for this project yet.</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300">
+            Printable reports are generated from saved simulation runs. Open the workspace, run a benchmark from the Simulations tab, then return here to export a shareable report.
+          </p>
+          {runId ? (
+            <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+              The requested run could not be found, and there are no other saved benchmarks to fall back to yet.
+            </div>
+          ) : null}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href={`/projects/${project.id}`} className="inline-flex items-center rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 transition hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+              Open workspace
+            </Link>
+            <Link href="/projects" className="inline-flex items-center rounded-full border border-white/10 px-5 py-3 text-white transition hover:border-cyan-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+              Back to projects
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (
