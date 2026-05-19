@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Lock, Trash2 } from "lucide-react";
 import { cn, formatDate, formatPercent } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { getVersionStateLabel } from "./status-utils";
 import type { WorkbenchState } from "./types";
 import { SectionCard } from "./shared";
 
@@ -125,7 +126,7 @@ export function VersionSidebar({ state }: VersionSidebarProps) {
         }}
       />
 
-      <SectionCard title="Versions" description="Published versions are locked. Editing a published version creates a new draft.">
+      <SectionCard title="Versions" description="Published versions are locked checkpoints. Saving changes from one creates a fresh draft.">
         <div className="space-y-3">
           {project.versions.map((version) => (
             <div key={version.id} className="group relative">
@@ -138,15 +139,32 @@ export function VersionSidebar({ state }: VersionSidebarProps) {
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    {version.published && <Lock className="h-3.5 w-3.5 text-cyan-400" aria-label="Published (locked)" />}
-                    <p className="font-medium text-white">{version.label}</p>
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-white">{version.label}</p>
+                      <span className={cn(
+                        "rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-[0.22em]",
+                        version.published
+                          ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-100"
+                          : "border-white/10 bg-slate-950/70 text-slate-300",
+                      )}>
+                        {getVersionStateLabel(version)}
+                      </span>
+                      {selectedVersionId === version.id ? (
+                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.22em] text-emerald-100">
+                          Current
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-sm text-slate-400">
+                      {version.cards.length} cards · {version.resources.length} resources · {version.winConditionType.replaceAll("_", " ")}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {version.published ? "Locked checkpoint — save edits to spin up a new draft." : "Editable draft — publish when the metrics are stable."}
+                    </p>
                   </div>
                   <span className="font-mono text-xs uppercase tracking-[0.25em] text-slate-500">{formatDate(version.updatedAt)}</span>
                 </div>
-                <p className="mt-3 text-sm text-slate-400">
-                  {version.published ? "Published · " : "Draft · "}{version.cards.length} cards · {version.resources.length} resources · {version.winConditionType.replaceAll("_", " ")}
-                </p>
               </button>
               <div className="absolute right-2 top-2 flex gap-1 opacity-60 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
                 {!version.published && (

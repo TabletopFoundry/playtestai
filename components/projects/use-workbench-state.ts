@@ -128,7 +128,12 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
         const nextProject = await updateFromResponse(response, { keepStatus: silent });
         const savedVersion = nextProject.versions.find((version) => version.id === selectedVersionIdRef.current) ?? nextProject.versions[0] ?? null;
         if (!silent && savedVersion) {
-          setStatusMessage(`Saved ${savedVersion.label}.`);
+          const createdDraft = selectedVersion?.published && savedVersion.id !== selectedVersion.id;
+          setStatusMessage(
+            createdDraft
+              ? `Created draft "${savedVersion.label}" from locked version "${selectedVersion.label}".`
+              : `Saved ${savedVersion.label}.`,
+          );
         }
         return savedVersion;
       } catch (caught) {
@@ -138,7 +143,7 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
         setSavingVersion(false);
       }
     },
-    [project.id, workingVersion, updateFromResponse],
+    [project.id, selectedVersion, workingVersion, updateFromResponse],
   );
 
   const handleCreateSnapshot = useCallback(async () => {

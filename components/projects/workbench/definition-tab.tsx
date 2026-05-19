@@ -9,6 +9,7 @@ import { SectionCard } from "./shared";
 import { ResourceEditor } from "./resource-editor";
 import { CardEditor } from "./card-editor";
 import { CsvImportPanel } from "./csv-import-panel";
+import { getVersionStateLabel } from "./status-utils";
 
 interface DefinitionTabProps {
   state: WorkbenchState;
@@ -168,9 +169,17 @@ export function DefinitionTab({ state, savingProject, savingVersion, handleSaveP
       </SectionCard>
 
       <SectionCard title="Version settings" description="Snapshots are immutable checkpoints you can branch from for what-if analysis.">
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.22em]">
+          <span className={workingVersion.published ? "rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-cyan-100" : "rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-slate-300"}>
+            {getVersionStateLabel(workingVersion)}
+          </span>
+          <span className="rounded-full border border-white/10 bg-slate-950/70 px-3 py-1 text-slate-300">
+            {workingVersion.label}
+          </span>
+        </div>
         {workingVersion.published && (
           <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 px-4 py-3 text-sm text-cyan-100">
-            This version is published and locked. Saving changes will create a new draft version.
+            You are inspecting a locked checkpoint. Keep it as a stable baseline — when you save edits from this screen, PlaytestAI will create a new draft branch instead of overwriting the published version.
           </div>
         )}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -224,7 +233,7 @@ export function DefinitionTab({ state, savingProject, savingVersion, handleSaveP
             className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
           >
             {savingVersion ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save version
+            {workingVersion.published ? "Save as new draft" : "Save version"}
           </button>
           <button type="button" onClick={() => void handleCreateSnapshot()} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyan-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
             <CopyPlus className="h-4 w-4" />
