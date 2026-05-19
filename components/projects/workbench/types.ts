@@ -65,6 +65,34 @@ export function getSharedPlayerRange(versionA: GameVersion | null | undefined, v
   return min <= max ? { min, max } : null;
 }
 
+export function isComparisonSelectionCurrent(
+  comparison:
+    | {
+        versionAId: string;
+        versionBId: string;
+        config: SimulationConfig;
+      }
+    | null
+    | undefined,
+  versionAId: string,
+  versionBId: string,
+  config: SimulationConfig,
+) {
+  if (!comparison) {
+    return false;
+  }
+
+  return (
+    comparison.versionAId === versionAId &&
+    comparison.versionBId === versionBId &&
+    comparison.config.games === config.games &&
+    comparison.config.playerCount === config.playerCount &&
+    comparison.config.seed === config.seed &&
+    comparison.config.agentTypes.length === config.agentTypes.length &&
+    comparison.config.agentTypes.every((agent, index) => agent === config.agentTypes[index])
+  );
+}
+
 export function normalizeConfig(version: GameVersion, config: SimulationConfig): SimulationConfig {
   const playerCount = Math.min(Math.max(config.playerCount, version.playerCountMin), version.playerCountMax);
   return {

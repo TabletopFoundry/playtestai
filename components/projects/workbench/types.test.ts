@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { GameVersion } from "@/lib/types";
-import { getSharedPlayerRange, syncAgentTypes } from "./types";
+import type { GameVersion, SimulationConfig } from "@/lib/types";
+import { getSharedPlayerRange, isComparisonSelectionCurrent, syncAgentTypes } from "./types";
 
 const baseVersion: GameVersion = {
   id: "version-a",
@@ -36,5 +36,47 @@ describe("getSharedPlayerRange", () => {
   it("returns null when versions cannot share a player count", () => {
     expect(getSharedPlayerRange(baseVersion, { ...baseVersion, id: "version-c", playerCountMin: 5, playerCountMax: 6 }))
       .toBeNull();
+  });
+});
+
+describe("isComparisonSelectionCurrent", () => {
+  const comparisonConfig: SimulationConfig = {
+    games: 500,
+    playerCount: 3,
+    seed: 42,
+    agentTypes: ["random", "greedy", "balanced"],
+  };
+
+  it("returns true when both versions and config still match the last comparison", () => {
+    expect(
+      isComparisonSelectionCurrent(
+        { versionAId: "version-a", versionBId: "version-b", config: comparisonConfig },
+        "version-a",
+        "version-b",
+        comparisonConfig,
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false when either selected version changes", () => {
+    expect(
+      isComparisonSelectionCurrent(
+        { versionAId: "version-a", versionBId: "version-b", config: comparisonConfig },
+        "version-a",
+        "version-c",
+        comparisonConfig,
+      ),
+    ).toBe(false);
+  });
+
+  it("returns false when the simulation config changes", () => {
+    expect(
+      isComparisonSelectionCurrent(
+        { versionAId: "version-a", versionBId: "version-b", config: comparisonConfig },
+        "version-a",
+        "version-b",
+        { ...comparisonConfig, seed: 1337 },
+      ),
+    ).toBe(false);
   });
 });

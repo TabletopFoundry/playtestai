@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CopyPlus, Loader2, Swords, TableProperties, X } from "lucide-react";
+import { ArrowLeftRight, CopyPlus, Loader2, Swords, TableProperties, X } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -17,7 +17,7 @@ import type { AgentType, SimulationBatchResult, SimulationConfig } from "@/lib/t
 import { agentLabel, formatPercent } from "@/lib/utils";
 import { getVersionStateLabel } from "./status-utils";
 import type { WorkbenchState } from "./types";
-import { createConfig, defaultAgents, getSharedPlayerRange, normalizeConfig, syncAgentTypes } from "./types";
+import { createConfig, defaultAgents, getSharedPlayerRange, isComparisonSelectionCurrent, normalizeConfig, syncAgentTypes } from "./types";
 import { MetricCard, SectionCard, darkTooltipProps } from "./shared";
 
 interface CompareTabProps {
@@ -44,6 +44,7 @@ export function CompareTab({ state }: CompareTabProps) {
   const [comparison, setComparison] = useState<{
     versionAId: string;
     versionBId: string;
+    config: SimulationConfig;
     resultA: SimulationBatchResult;
     resultB: SimulationBatchResult;
   } | null>(null);
@@ -56,11 +57,13 @@ export function CompareTab({ state }: CompareTabProps) {
     abortControllerRef.current?.abort();
   }, []);
 
+  const notEnoughVersions = project.versions.length < 2;
   const selectedVersionA = project.versions.find((version) => version.id === compareVersionAId) ?? project.versions[0] ?? null;
   const fallbackVersionB = project.versions.find((version) => version.id !== (selectedVersionA?.id ?? "")) ?? project.versions[0] ?? null;
   const selectedVersionB =
     project.versions.find((version) => version.id === compareVersionBId && version.id !== (selectedVersionA?.id ?? "")) ??
     fallbackVersionB;
+  const versionBChoices = project.versions.filter((version) => version.id !== (selectedVersionA?.id ?? ""));
 
   const compareVersions = useMemo(
     () => ({
@@ -75,7 +78,6 @@ export function CompareTab({ state }: CompareTabProps) {
     [selectedVersionA, selectedVersionB],
   );
 
-  const notEnoughVersions = project.versions.length < 2;
   const sharedPlayerCount = sharedPlayerRange
     ? Math.min(Math.max(compareConfig.playerCount, sharedPlayerRange.min), sharedPlayerRange.max)
     : compareConfig.playerCount;
@@ -86,6 +88,10 @@ export function CompareTab({ state }: CompareTabProps) {
         agentTypes: syncAgentTypes(sharedPlayerCount, compareConfig.agentTypes),
       }
     : compareConfig;
+  const currentComparisonConfig = selectedVersionA && sharedPlayerRange ? normalizeConfig(selectedVersionA, sharedConfig) : null;
+  const comparisonIsCurrent = currentComparisonConfig && selectedVersionA && selectedVersionB
+    ? isComparisonSelectionCurrent(comparison, selectedVersionA.id, selectedVersionB.id, currentComparisonConfig)
+    : false;
 
   const comparisonWinner = useMemo(() => {
     if (!comparison) return null;
@@ -144,7 +150,7 @@ export function CompareTab({ state }: CompareTabProps) {
       setCompareConfig(configA);
       const resultA = await simulateBatchAsync(versionA, configA, (value) => setCompareProgress(value / 2), controller.signal);
       const resultB = await simulateBatchAsync(versionB, configB, (value) => setCompareProgress(50 + value / 2), controller.signal);
-      setComparison({ versionAId: versionA.id, versionBId: versionB.id, resultA, resultB });
+      setComparison({ versionAId: versionA.id, versionBId: versionB.id, config: configA, resultA, resultB });
       setStatusMessage("A/B comparison complete. Review the recommendation below.");
     } catch (caught) {
       if (caught instanceof DOMException && caught.name === "AbortError") return;
@@ -164,6 +170,15 @@ export function CompareTab({ state }: CompareTabProps) {
     setStatusMessage("A/B comparison cancelled before completion.");
   }
 
+  function handleSwapVersions() {
+    if (!selectedVersionA || !selectedVersionB) {
+      return;
+    }
+
+    setCompareVersionAId(selectedVersionB.id);
+    setCompareVersionBId(selectedVersionA.id);
+  }
+
   return (
     <div className="space-y-6">
       <SectionCard title="Variant comparison" description="Fork the current version, tweak stats, then compare A vs B under the same simulation load.">
@@ -175,6 +190,15 @@ export function CompareTab({ state }: CompareTabProps) {
           <button type="button" onClick={() => setActiveTab("definition")} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyan-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
             <TableProperties className="h-4 w-4" />
             Edit card stats
+          </button>
+          <button
+            type="button"
+            onClick={handleSwapVersions}
+            disabled={!selectedVersionA || !selectedVersionB || compareLoading}
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyan-400/40 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50"
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+            Swap A/B
           </button>
         </div>
 
@@ -191,7 +215,7 @@ export function CompareTab({ state }: CompareTabProps) {
             <label className="space-y-2">
               <span className="text-sm text-slate-300">Version B</span>
               <select value={selectedVersionB?.id ?? ""} onChange={(event) => setCompareVersionBId(event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
-                {project.versions.map((version) => (
+                {versionBChoices.map((version) => (
                   <option key={version.id} value={version.id}>{version.label}</option>
                 ))}
               </select>
@@ -229,16 +253,20 @@ export function CompareTab({ state }: CompareTabProps) {
             <p className="font-medium text-white">Comparison fairness metadata</p>
             <dl className="mt-3 space-y-2">
               <div className="flex items-center justify-between gap-3">
-                <dt>{compareVersions.versionA?.label ?? "Version A"}</dt>
-                <dd>{compareVersions.versionA ? getVersionStateLabel(compareVersions.versionA) : "Missing"}</dd>
+                <dt>{selectedVersionA?.label ?? "Version A"}</dt>
+                <dd>{selectedVersionA ? getVersionStateLabel(selectedVersionA) : "Missing"}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <dt>{compareVersions.versionB?.label ?? "Version B"}</dt>
-                <dd>{compareVersions.versionB ? getVersionStateLabel(compareVersions.versionB) : "Missing"}</dd>
+                <dt>{selectedVersionB?.label ?? "Version B"}</dt>
+                <dd>{selectedVersionB ? getVersionStateLabel(selectedVersionB) : "Missing"}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt>Shared seat range</dt>
                 <dd>{sharedPlayerRange ? `${sharedPlayerRange.min}-${sharedPlayerRange.max}` : "No overlap"}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt>Shared config</dt>
+                <dd className="text-right">{sharedConfig.games} games · seed {sharedConfig.seed}</dd>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <dt>Seat mix</dt>
@@ -310,7 +338,7 @@ export function CompareTab({ state }: CompareTabProps) {
           </div>
         ) : null}
 
-        <div className="mt-5 flex items-center gap-3">
+        <div className="mt-5 flex flex-wrap items-center gap-3">
           <button type="button" onClick={() => void handleRunComparison()} disabled={compareLoading || notEnoughVersions || !sharedPlayerRange} className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
             {compareLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Swords className="h-4 w-4" />}
             Run A/B comparison
@@ -321,6 +349,12 @@ export function CompareTab({ state }: CompareTabProps) {
             <span className="text-sm text-slate-400">The same seed and seat mix are reused for both variants.</span>
           )}
         </div>
+
+        {comparison && !comparisonIsCurrent ? (
+          <div className="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Current controls no longer match the last completed comparison. The results below still reflect {compareVersions.versionA?.label ?? "Variant A"} vs {compareVersions.versionB?.label ?? "Variant B"} with {comparison.config.games} games, seed {comparison.config.seed}, and {comparison.config.playerCount} seats. Run the comparison again to refresh the recommendation.
+          </div>
+        ) : null}
       </SectionCard>
 
       {comparison ? (
