@@ -105,21 +105,28 @@ export default async function ReportPage({
           </div>
           <p className="text-sm text-slate-400">Showing {run.label}</p>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {project.runs.map((candidate) => (
-            <Link
-              key={candidate.id}
-              href={`/projects/${project.id}/report?runId=${candidate.id}`}
-              className={cn(
-                "rounded-full border px-4 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
-                candidate.id === run.id
-                  ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-100"
-                  : "border-white/10 text-white hover:border-cyan-400/40",
-              )}
-            >
-              {candidate.label}
-            </Link>
-          ))}
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {project.runs.map((candidate) => {
+            const candidateVersion = project.versions.find((version) => version.id === candidate.versionId) ?? null;
+            return (
+              <Link
+                key={candidate.id}
+                href={`/projects/${project.id}/report?runId=${candidate.id}`}
+                aria-current={candidate.id === run.id ? "page" : undefined}
+                className={cn(
+                  "rounded-3xl border px-4 py-4 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
+                  candidate.id === run.id
+                    ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-100"
+                    : "border-white/10 text-white hover:border-cyan-400/40",
+                )}
+              >
+                <span className="block font-medium">{candidate.label}</span>
+                <span className="mt-2 block text-xs uppercase tracking-[0.22em] text-slate-400">
+                  {candidateVersion?.label ?? "Unknown version"} · {formatDate(candidate.createdAt)} · {candidate.config.games} games · seed {candidate.config.seed}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
