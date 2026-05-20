@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { Download } from "lucide-react";
+import { Download, Sparkles } from "lucide-react";
 import type { GameProject } from "@/lib/types";
 import { agentLabel, formatDate } from "@/lib/utils";
+import type { ActiveTab } from "./types";
 import { MetricCard, SectionCard } from "./shared";
 
 interface ReportTabProps {
   project: GameProject;
+  selectedVersion: GameProject["versions"][number] | null;
   selectedRun: GameProject["runs"][number] | null;
+  setActiveTab: (tab: ActiveTab) => void;
 }
 
-export function ReportTab({ project, selectedRun }: ReportTabProps) {
+export function ReportTab({ project, selectedVersion, selectedRun, setActiveTab }: ReportTabProps) {
   const selectedRunVersion = selectedRun
     ? project.versions.find((version) => version.id === selectedRun.versionId) ?? null
     : null;
@@ -55,6 +58,19 @@ export function ReportTab({ project, selectedRun }: ReportTabProps) {
                 </Link>
               </div>
             </div>
+          </div>
+        ) : project.runs.length > 0 && selectedVersion ? (
+          <div className="space-y-4 rounded-3xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm leading-7 text-amber-100">
+            <div>
+              <p className="font-medium text-white">{selectedVersion.label} does not have a saved report yet.</p>
+              <p className="mt-3">
+                Reports are generated from saved benchmarks for the version you are currently editing. Run a simulation for this branch or pick another benchmark from Simulation history.
+              </p>
+            </div>
+            <button type="button" onClick={() => setActiveTab("simulate")} className="inline-flex items-center gap-2 rounded-full bg-cyan-400 px-5 py-3 font-medium text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+              <Sparkles className="h-4 w-4" />
+              Run a benchmark for {selectedVersion.label}
+            </button>
           </div>
         ) : (
           <p className="text-sm text-slate-400">Run a simulation first to generate a report.</p>

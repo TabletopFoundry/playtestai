@@ -21,6 +21,7 @@ import { MetricCard, SectionCard, darkTooltipProps } from "./shared";
 
 interface DashboardTabProps {
   project: GameProject;
+  selectedVersion: GameProject["versions"][number] | null;
   selectedRun: GameProject["runs"][number] | null;
   setActiveTab: (tab: ActiveTab) => void;
 }
@@ -68,7 +69,7 @@ function downloadCsv(content: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function DashboardTab({ project, selectedRun, setActiveTab }: DashboardTabProps) {
+export function DashboardTab({ project, selectedVersion, selectedRun, setActiveTab }: DashboardTabProps) {
   const [cardSortKey, setCardSortKey] = useState<CardSortKey>("powerScore");
   const selectedRunVersion = selectedRun
     ? project.versions.find((version) => version.id === selectedRun.versionId) ?? null
@@ -80,6 +81,25 @@ export function DashboardTab({ project, selectedRun, setActiveTab }: DashboardTa
   }, [cardSortKey, selectedRun]);
 
   if (!selectedRun) {
+    if (project.runs.length > 0 && selectedVersion) {
+      return (
+        <SectionCard title="No benchmark saved for this version" description="Analytics follow the version currently selected in the workspace.">
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-amber-500/30 bg-amber-500/10 p-5 text-sm leading-7 text-amber-100">
+              <p className="font-medium text-white">{selectedVersion.label} does not have a saved benchmark yet.</p>
+              <p className="mt-3">
+                Run a simulation for this version to refresh the dashboard, or choose another benchmark from Simulation history if you want to inspect a different branch.
+              </p>
+            </div>
+            <button type="button" onClick={() => setActiveTab("simulate")} className="rounded-full bg-cyan-400 px-4 py-2 text-sm font-medium text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+              <Sparkles className="mr-2 inline h-4 w-4" />
+              Run a benchmark for {selectedVersion.label}
+            </button>
+          </div>
+        </SectionCard>
+      );
+    }
+
     return (
       <SectionCard title="Welcome to your workspace" description="Get started with your first simulation in three steps.">
         <div className="space-y-4">

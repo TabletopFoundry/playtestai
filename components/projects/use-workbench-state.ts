@@ -53,7 +53,10 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
       if (!nextVersion) return;
 
       const clone = deepClone(nextVersion);
+      const nextRun = nextProject.runs.find((run) => run.versionId === nextVersion.id) ?? null;
       setSelectedVersionId(nextVersion.id);
+      setSelectedRunId(nextRun?.id ?? "");
+      selectedRunIdRef.current = nextRun?.id ?? "";
       setWorkingVersion(clone);
       setCardStatsInput(Object.fromEntries(clone.cards.map((card) => [card.id, stringifyStats(card.stats)])));
     },

@@ -139,7 +139,9 @@ export function ProjectWorkbench({ initialProject }: { initialProject: GameProje
                 <p className="mt-3 text-sm text-slate-300">
                   {selectedRun
                     ? `Selected benchmark: ${selectedRun.label} · ${project.versions.find((version) => version.id === selectedRun.versionId)?.label ?? "Unknown version"} · ${formatDate(selectedRun.createdAt)}.`
-                    : "No saved runs yet — start with a baseline benchmark once your ruleset is ready."}
+                    : project.runs.length > 0 && selectedVersion
+                      ? `No saved benchmark is attached to ${selectedVersion.label} yet — run this version or choose another benchmark from history.`
+                      : "No saved runs yet — start with a baseline benchmark once your ruleset is ready."}
                 </p>
               </div>
             </div>
@@ -227,7 +229,7 @@ export function ProjectWorkbench({ initialProject }: { initialProject: GameProje
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           <div role="tabpanel" id="tabpanel-dashboard" aria-labelledby="tab-dashboard" className={activeTab !== "dashboard" ? "hidden" : undefined}>
-            <DashboardTab project={project} selectedRun={selectedRun} setActiveTab={setActiveTab} />
+            <DashboardTab project={project} selectedVersion={selectedVersion} selectedRun={selectedRun} setActiveTab={setActiveTab} />
           </div>
 
           <div role="tabpanel" id="tabpanel-definition" aria-labelledby="tab-definition" className={activeTab !== "definition" ? "hidden" : undefined}>
@@ -243,7 +245,7 @@ export function ProjectWorkbench({ initialProject }: { initialProject: GameProje
           </div>
 
           <div role="tabpanel" id="tabpanel-report" aria-labelledby="tab-report" className={activeTab !== "report" ? "hidden" : undefined}>
-            <ReportTab project={project} selectedRun={selectedRun} />
+            <ReportTab project={project} selectedVersion={selectedVersion} selectedRun={selectedRun} setActiveTab={setActiveTab} />
           </div>
         </div>
 
