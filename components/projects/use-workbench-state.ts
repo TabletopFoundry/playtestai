@@ -158,13 +158,15 @@ export function useWorkbenchState(initialProject: GameProject): WorkbenchState {
         body: JSON.stringify({ sourceVersionId: latestVersion?.id, label: `v${project.versions.length + 1}.0-snapshot` }),
       });
       const nextProject = await updateFromResponse(response);
-      const newVersion = nextProject.versions[0];
+      const newVersion = nextProject.versions[0] ?? null;
       if (newVersion) {
         syncVersionSelection(nextProject, newVersion.id);
       }
       setStatusMessage("Snapshot created. Use it as Variant B or a new tuning branch.");
+      return newVersion;
     } catch (caught) {
       setErrorMessage(caught instanceof Error ? caught.message : "Failed to create snapshot.");
+      return null;
     }
   }, [dirty, handleSaveVersion, project.id, project.versions.length, selectedVersion, syncVersionSelection, updateFromResponse]);
 

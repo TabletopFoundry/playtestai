@@ -27,6 +27,7 @@ interface CompareTabProps {
 export function CompareTab({ state }: CompareTabProps) {
   const {
     project,
+    selectedVersion,
     setStatusMessage,
     setErrorMessage,
     setActiveTab,
@@ -179,11 +180,24 @@ export function CompareTab({ state }: CompareTabProps) {
     setCompareVersionBId(selectedVersionA.id);
   }
 
+  async function handleCreateVariantBSnapshot() {
+    const sourceVersionId = selectedVersion?.id ?? selectedVersionA?.id ?? compareVersionAId;
+    const snapshot = await handleCreateSnapshot();
+    if (!snapshot) {
+      return;
+    }
+
+    if (sourceVersionId) {
+      setCompareVersionAId(sourceVersionId);
+    }
+    setCompareVersionBId(snapshot.id);
+  }
+
   return (
     <div className="space-y-6">
       <SectionCard title="Variant comparison" description="Fork the current version, tweak stats, then compare A vs B under the same simulation load.">
         <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={() => void handleCreateSnapshot()} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyan-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
+          <button type="button" onClick={() => void handleCreateVariantBSnapshot()} className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white transition hover:border-cyan-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50">
             <CopyPlus className="h-4 w-4" />
             Duplicate current version as Variant B
           </button>

@@ -26,7 +26,7 @@ export interface WorkbenchState {
   syncVersionSelection: (project: GameProject, versionId: string) => void;
   handleSaveVersion: (silent?: boolean) => Promise<GameVersion | null>;
   handleSaveProject: () => Promise<void>;
-  handleCreateSnapshot: () => Promise<void>;
+  handleCreateSnapshot: () => Promise<GameVersion | null>;
   updateFromResponse: (response: Response, options?: { versionId?: string; keepStatus?: boolean }) => Promise<GameProject>;
   cardStatsInput: Record<string, string>;
   setCardStatsInput: (input: Record<string, string> | ((current: Record<string, string>) => Record<string, string>)) => void;
