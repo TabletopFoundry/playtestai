@@ -86,7 +86,7 @@ export function CsvImportPanel({
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-medium text-white">Import cards from CSV</h3>
-          <p className="mt-2 text-sm text-slate-400">Headers: name, cost, power, quantity, plus any numeric custom stat columns.</p>
+          <p className="mt-2 text-sm text-slate-400">Headers: name, cost, power, quantity, optional notes, plus any numeric custom stat columns.</p>
         </div>
         <Upload className="h-5 w-5 text-cyan-200" />
       </div>
@@ -97,7 +97,7 @@ export function CsvImportPanel({
           name,cost,power,quantity,score,draw,damage,notes
         </code>
         <p className="mt-3 text-xs leading-6 text-slate-400">
-          Every extra numeric column becomes a custom stat automatically. Use this as a starter header row for spreadsheet exports.
+          Every extra numeric column becomes a custom stat automatically, and the optional <code className="rounded bg-slate-950/80 px-1.5 py-0.5 text-cyan-200">notes</code> column is preserved for card-level annotations.
         </p>
       </div>
 
